@@ -1,16 +1,16 @@
-import { idlFactory as reBobFactory } from '../declarations/backend';
-import { _SERVICE as reBobService } from '../declarations/service_hack/service'; // changed to service.d because dfx generate would remove the export line from index.d
+import { idlFactory as sGLDTFactory } from '../declarations/backend';
+import { _SERVICE as sGLDTService } from '../declarations/service_hack/service'; // changed to service.d because dfx generate would remove the export line from index.d
 import { idlFactory as icpFactory } from '../declarations/nns-ledger';
-import { _SERVICE as bobService } from '../declarations/nns-ledger/index.d';
+import { _SERVICE as gldtService } from '../declarations/nns-ledger/index.d';
 import { useEffect, useRef, useState } from 'react';
 import { AuthClient } from '@dfinity/auth-client';
 import { HttpAgent, Actor, AnonymousIdentity } from '@dfinity/agent';
 
 interface InternetIdentityLoginHandlerProps {
-  bobCanisterID: string;
-  setBobLedgerActor: (value: bobService | null) => void;
-  reBobCanisterID: string;
-  setreBobActor: (value: reBobService | null) => void;
+  gldtCanisterID: string;
+  setGldtLedgerActor: (value: gldtService | null) => void;
+  sGLDTCanisterID: string;
+  setsGLDTActor: (value: sGLDTService | null) => void;
   loading: boolean;
   setLoading: (value: boolean) => void;
   isConnected: boolean;
@@ -24,10 +24,10 @@ interface InternetIdentityLoginHandlerProps {
 const InternetIdentityLoginHandler: React.FC<
   InternetIdentityLoginHandlerProps
 > = ({
-  bobCanisterID,
-  setBobLedgerActor,
-  reBobCanisterID,
-  setreBobActor,
+  gldtCanisterID,
+  setGldtLedgerActor,
+  sGLDTCanisterID,
+  setsGLDTActor,
   loading,
   setLoading,
   isConnected,
@@ -64,6 +64,7 @@ const InternetIdentityLoginHandler: React.FC<
       authClient.login({
         identityProvider,
         onSuccess: () => {
+          console.log('II login success, setting isConnected to true');
           setIsConnected(true); // Set authentication state to true
           setConnectionType('ii');
           resolve(); // Resolve the promise on success
@@ -85,6 +86,7 @@ const InternetIdentityLoginHandler: React.FC<
     const identity = authClient.getIdentity();
 
     setLoggedInPrincipal(identity.getPrincipal().toString());
+    console.log('Setting isConnected to true in login function');
     setIsConnected(true);
     setConnectionType('ii');
     await createAgent();
@@ -94,7 +96,12 @@ const InternetIdentityLoginHandler: React.FC<
   useEffect(() => {
     if (!identityProvider || !authClient) return;
 
-    login();
+    // Only login if not already authenticated
+    authClient.isAuthenticated().then(authenticated => {
+      if (!authenticated) {
+        login();
+      }
+    });
   }, [identityProvider]);
 
   const createAuthClient = async (): Promise<void> => {
@@ -109,10 +116,12 @@ const InternetIdentityLoginHandler: React.FC<
     if (!authClient) return;
 
     const authenticated = await authClient.isAuthenticated();
+    console.log('Checking if authenticated:', authenticated);
     if (authenticated) {
       const identity = authClient.getIdentity();
 
       setLoggedInPrincipal(identity.getPrincipal().toString());
+      console.log('Setting isConnected to true in checkLoggedIn');
       setIsConnected(true);
       setConnectionType('ii');
       await createAgent();
@@ -132,8 +141,8 @@ const InternetIdentityLoginHandler: React.FC<
       setIsConnected(false);
       setConnectionType('');
       setLoggedInPrincipal('');
-      setreBobActor(null);
-      setBobLedgerActor(null);
+      setsGLDTActor(null);
+      setGldtLedgerActor(null);
       setIdentityProvider(null);
     }
   };
@@ -161,17 +170,17 @@ const InternetIdentityLoginHandler: React.FC<
       console.log('aaa');
     }
 
-    setreBobActor(
-      await Actor.createActor(reBobFactory, {
+    setsGLDTActor(
+      await Actor.createActor(sGLDTFactory, {
         agent,
-        canisterId: reBobCanisterID,
+        canisterId: sGLDTCanisterID,
       })
     );
 
-    setBobLedgerActor(
+    setGldtLedgerActor(
       await Actor.createActor(icpFactory, {
         agent,
-        canisterId: bobCanisterID,
+        canisterId: gldtCanisterID,
       })
     );
   };

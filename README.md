@@ -1,111 +1,164 @@
-#REHASHER & exohashing
+# GLDT VAULT - Low Fee GLDT Wrapper
 
+A token wrapper dapp that allows users to wrap GLDT tokens into sGLDT with significantly lower transaction fees while maintaining a 1:1 ratio.
 
-fakebob is for testnet only
+## Overview
 
+This application provides a simple interface for users to:
+- **Wrap GLDT to sGLDT**: Deposit GLDT and receive sGLDT tokens
+- **Unwrap sGLDT to GLDT**: Burn sGLDT tokens and receive GLDT back
 
-1 canister on bob subnet for reBOB
+The wrapper maintains a 1:1 ratio between GLDT and sGLDT, but sGLDT has much lower transaction fees, making it ideal for frequent trading and transfers.
 
-dfx canister --network ic create --subnet bkfrj-6k62g-dycql-7h53p-atvkj-zg4to-gaogh-netha-ptybj-ntsgw-rqe
+### Token Details:
+- **GLDT Token:** `6c7su-kiaaa-aaaar-qaira-cai` - Fee: 10,000,000 (0.1 GLDT)
+- **sGLDT Token:** Minted by backend canister - Fee: 1,000 (0.000001 sGLDT)
+- **GLDT Decimals:** 8
+- **sGLDT Decimals:** 6
+- **Ratio:** 1:1 (1 GLDT = 1 sGLDT)
 
-they you should just need to replace the const reBobCanisterID = "bd3sg-teaaa-aaaaa-qaaba-cai"; line in App.tsx with the reBob canister id.
-(furst put cycles in ledger princple)
+## Features
 
-then npm instal
+- **Low Fee Wrapping**: Convert GLDT to sGLDT for reduced transaction costs
+- **Secure Unwrapping**: Burn sGLDT to retrieve original GLDT
+- **Real-time Balances**: View your GLDT and sGLDT balances
+- **Transaction History**: Track all wrap/unwrap operations
+- **Multiple Authentication**: Support for Plug wallet and Internet Identity
+- **Beautiful UI**: Gold-themed interface with modern design
 
-then npm start; it should build 
+## Architecture
 
-then go into dfx.json and for the frontend and backend entries you'll need to add something like:
+The application consists of three main components:
 
-"backend": {
-        "id": {
-          "ic": "rno2w-sqaaa-aaaaa-aaacq-cai",
-        }
-      },
+1. **Backend Canister** (`i2s4q-syaaa-aaaan-qz4sq-cai`): Handles sGLDT token minting/burning and GLDT transfers
+2. **Frontend Canister**: Serves the React web application
+3. **GLDT Ledger**: The original GLDT token contract
 
-But backend will be your rebob canister and frontend will be your front end
+## Deployment
 
-then dfx deploy --network ic backend
-then dfx deploy --network ic frontend
+### Prerequisites
 
-it should build,
+- [Node.js](https://nodejs.org/en/) `>= 16`
+- [`dfx`](https://internetcomputer.org/docs/current/developer-docs/build/install-upgrade-remove) `>= 0.14`
+- ICP balance for canister deployment
 
-You may need to update the compute allocation of the rebob canister to 1
+### 1. Clone and Setup
 
-dfx canister --network ic update-settings backend --compute-allocation 1
-
-This will ensure you get scheduled to run at least every 100 rounds
-
---
-
-notes:
-
-dfx,json may require reformatting to canister_ids.json
-
-{
-  "backend": {
-    "ic": "xxx"
-  },
-  "frontend": {
-    "ic": "xxx"
-  },
-  "rebob": {
-    "ic": "xxx"
-  }
-}
-
-
-# Vite + React + Motoko
-
-### Get started directly in your browser:
-
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/rvanasa/vite-react-motoko)
-
-This template gives you everything you need to build a full-stack Web3 application on the [Internet Computer](https://internetcomputer.org/).
-
-For an example of a real-world dapp built using this starter project, check out the [source code](https://github.com/dfinity/feedback) for DFINITY's [Developer Experience Feedback Board](https://dx.internetcomputer.org/).
-
-## 📦 Create a New Project
-
-Make sure that [Node.js](https://nodejs.org/en/) `>= 16` and [`dfx`](https://internetcomputer.org/docs/current/developer-docs/build/install-upgrade-remove) `>= 0.14` are installed on your system.
-
-Run the following commands in a new, empty project directory:
-
-```sh
-npx degit rvanasa/vite-react-motoko # Download this starter project
-dfx start --clean --background # Run dfx in the background
-npm run setup # Install packages, deploy canisters, and generate type bindings
-
-npm start # Start the development server
+```bash
+git clone <repository-url>
+cd Bobsplitter
+npm install
 ```
 
-When ready, run `dfx deploy --network ic` to deploy your application to the Internet Computer.
+### 2. Configure Canister IDs
 
-## 🛠️ Technology Stack
+The application is pre-configured with the following canister IDs:
 
-- [Vite](https://vitejs.dev/): high-performance tooling for front-end web development
-- [React](https://reactjs.org/): a component-based UI library
-- [TypeScript](https://www.typescriptlang.org/): JavaScript extended with syntax for types
-- [Sass](https://sass-lang.com/): an extended syntax for CSS stylesheets
-- [Prettier](https://prettier.io/): code formatting for a wide range of supported languages
-- [Motoko](https://github.com/dfinity/motoko#readme): a safe and simple programming language for the Internet Computer
-- [Mops](https://mops.one): an on-chain community package manager for Motoko
-- [mo-dev](https://github.com/dfinity/motoko-dev-server#readme): a live reload development server for Motoko
-- [@ic-reactor](https://github.com/B3Pay/ic-reactor): A suite of JavaScript libraries for seamless frontend development on the Internet Computer
+```typescript
+// In src/App.tsx
+const gldtCanisterID = '6c7su-kiaaa-aaaar-qaira-cai';  // GLDT Ledger
+const sGLDTCanisterID = 'i2s4q-syaaa-aaaan-qz4sq-cai'; // Backend (sGLDT)
+```
 
-## 📚 Documentation
+### 3. Deploy to Internet Computer
 
-- [Vite developer docs](https://vitejs.dev/guide/)
-- [React quick start guide](https://react.dev/learn)
-- [Internet Computer docs](https://internetcomputer.org/docs/current/developer-docs/ic-overview)
-- [`dfx.json` reference schema](https://internetcomputer.org/docs/current/references/dfx-json-reference/)
-- [Motoko developer docs](https://internetcomputer.org/docs/current/developer-docs/build/cdks/motoko-dfinity/motoko/)
-- [Mops usage instructions](https://j4mwm-bqaaa-aaaam-qajbq-cai.ic0.app/#/docs/install)
-- [@ic-reactor/react](https://b3pay.github.io/ic-reactor/modules/react.html)
+```bash
+# Set environment variable to suppress identity warning
+export DFX_WARNING=-mainnet_plaintext_identity
 
-## 💡 Tips and Tricks
+# Deploy backend canister
+dfx deploy backend --network ic
 
-- Customize your project's code style by editing the `.prettierrc` file and then running `npm run format`.
-- Reduce the latency of update calls by passing the `--emulator` flag to `dfx start`.
-- Install a Motoko package by running `npx ic-mops add <package-name>`. Here is a [list of available packages](https://mops.one/).
-- Split your frontend and backend console output by running `npm run frontend` and `npm run backend` in separate terminals.
+# Deploy frontend canister  
+dfx deploy frontend --network ic
+```
+
+### 4. Update Compute Allocation (Optional)
+
+For better performance, you may want to update the compute allocation:
+
+```bash
+dfx canister --network ic update-settings backend --compute-allocation 1
+```
+
+## Usage
+
+### Connecting to the App
+
+1. **Plug Wallet**: Click "Connect Plug" and approve the connection
+2. **Internet Identity**: Click "Connect Internet Identity" and authenticate
+
+### Wrapping GLDT to sGLDT
+
+1. Ensure you have sufficient GLDT balance
+2. Enter the amount of GLDT you want to wrap
+3. Click "Wrap GLDT"
+4. Approve the transaction in your wallet
+5. Wait for confirmation - you'll receive sGLDT tokens
+
+### Unwrapping sGLDT to GLDT
+
+1. Ensure you have sufficient sGLDT balance
+2. Enter the amount of sGLDT you want to unwrap
+3. Click "Unwrap to GLDT"
+4. Approve the transaction in your wallet
+5. Wait for confirmation - you'll receive GLDT tokens
+
+## Development
+
+### Local Development
+
+```bash
+# Start local replica
+dfx start --clean --background
+
+# Deploy locally
+dfx deploy
+
+# Start development server
+npm start
+```
+
+### Project Structure
+
+```
+src/
+├── components/
+│   ├── GLDTMintingField.tsx      # GLDT to sGLDT wrapping
+│   ├── SGLDTWithdrawField.tsx    # sGLDT to GLDT unwrapping
+│   ├── PlugLoginHandler.tsx      # Plug wallet integration
+│   ├── InternetIdentityLoginHandler.tsx  # II authentication
+│   └── TokenManagement.tsx       # Balance and allowance management
+├── assets/
+│   ├── goldbackground.jpg        # Background image
+│   ├── gold.png                  # Gold logo
+│   └── ...                       # Other assets
+├── App.tsx                       # Main application component
+└── index.scss                    # Global styles
+```
+
+## Technology Stack
+
+- **Frontend**: React + TypeScript + Vite
+- **Styling**: Sass + Material-UI
+- **Backend**: Motoko
+- **Authentication**: Plug Wallet + Internet Identity
+- **Deployment**: Internet Computer (ICP)
+
+## Security
+
+- All transactions require user approval through their wallet
+- Token transfers use ICRC-2 standard for secure approvals
+- Backend canister handles all token minting/burning operations
+- No private keys are stored in the application
+
+## Support
+
+For issues or questions:
+- Check the transaction status messages for detailed error information
+- Ensure you have sufficient token balances and allowances
+- Verify your wallet connection is active
+
+## License
+
+This project is open source and available under the MIT License.

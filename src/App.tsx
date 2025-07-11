@@ -1,9 +1,8 @@
 import './App.css';
 import React, { useState, useEffect, ReactElement, useRef } from 'react';
-import motokoLogo from './assets/motoko_moving.png';
-import motokoShadowLogo from './assets/motoko_shadow.png';
-import reactLogo from './assets/bob.png';
-import viteLogo from './assets/corn.png';
+import reactLogo from './assets/gold.png';
+import sgldtLogo from './assets/sgldt.png';
+import gldtLogo from './assets/gldtlogo.png';
 // import { useQueryCall, useUpdateCall } from '@ic-reactor/react';
 import { Principal } from '@dfinity/principal';
 // import {Agent, Actor, HttpAgent} from '@dfinity/agent';
@@ -13,38 +12,38 @@ import { AuthClient } from '@dfinity/auth-client';
 import { HttpAgent, Actor, AnonymousIdentity } from '@dfinity/agent';
 
 import { idlFactory as icpFactory } from './declarations/nns-ledger';
-import { _SERVICE as bobService } from './declarations/nns-ledger/index.d';
+import { _SERVICE as gldtService } from './declarations/nns-ledger/index.d';
 
-import { idlFactory as reBobFactory } from './declarations/backend';
-import { _SERVICE as reBobService } from './declarations/service_hack/service'; // changed to service.d because dfx generate would remove the export line from index.d
+import { idlFactory as sGLDTFactory } from './declarations/backend';
+import { _SERVICE as sGLDTService } from './declarations/service_hack/service'; // changed to service.d because dfx generate would remove the export line from index.d
 import { Stats } from './declarations/backend/backend.did.d';
 import { CircularProgress, TextField } from '@mui/material';
-import ReBobMintingField from './components/ReBobMintingField';
+import GLDTMintingField from './components/ReBobMintingField';
 import ShowTransactionStatus from './components/ShowTransactionStatus';
-import BobWithdrawField from './components/BobWithdrawField';
+import SGLDTWithdrawField from './components/BobWithdrawField';
 
 import bigintToFloatString from './bigIntToFloatString';
 import PlugLoginHandler from './components/PlugLoginHandler';
 import InternetIdentityLoginHandler from './components/InternetIdentityLoginHandler';
 import TokenManagement from './components/TokenManagement';
 
-const bobCanisterID =
+const gldtCanisterID =
   process.env.DFX_NETWORK === 'local'
-    ? 'bd3sg-teaaa-aaaaa-qaaba-cai'
-    : '7pail-xaaaa-aaaas-aabmq-cai';
-const reBobCanisterID =
+    ? '6c7su-kiaaa-aaaar-qaira-cai'
+    : '6c7su-kiaaa-aaaar-qaira-cai';
+const sGLDTCanisterID =
   process.env.DFX_NETWORK === 'local'
     ? 'bkyz2-fmaaa-aaaaa-qaaaq-cai'
-    : 'qvwlv-uyaaa-aaaas-aidpq-cai';
+    : 'i2s4q-syaaa-aaaan-qz4sq-cai';
 
 function App() {
   const [loading, setLoading] = useState(false);
   // const [icpBalance, setIcpBalance] = useState<bigint>(0n);
-  const [bobLedgerBalance, setBobLedgerBalance] = useState<bigint>(0n);
-  const [reBobLedgerBalance, setreBobLedgerBalance] = useState<bigint>(0n);
+  const [gldtLedgerBalance, setGldtLedgerBalance] = useState<bigint>(0n);
+  const [sGLDTLedgerBalance, setsGLDTLedgerBalance] = useState<bigint>(0n);
 
-  const [bobLedgerAllowance, setBobLedgerAllowance] = useState<bigint>(0n);
-  const [reBobLedgerAllowance, setReBobLedgerAllowance] = useState<bigint>(0n);
+  const [gldtLedgerAllowance, setGldtLedgerAllowance] = useState<bigint>(0n);
+  const [sGLDTLedgerAllowance, setsGLDTLedgerAllowance] = useState<bigint>(0n);
 
   const [share, setShare] = useState<bigint>(0n);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -52,43 +51,43 @@ function App() {
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [connectionType, setConnectionType] = useState<string>('');
 
-  const [reBobActor, setreBobActor] = useState<reBobService | null>(null);
-  // const [reBobActorTemp, setreBobActorTemp] = useState<reBobService | null>(
+  const [sGLDTActor, setsGLDTActor] = useState<sGLDTService | null>(null);
+  // const [sGLDTActorTemp, setsGLDTActorTemp] = useState<sGLDTService | null>(
   //   null
   // );
-  const [bobLedgerActor, setBobLedgerActor] = useState<bobService | null>(null);
+  const [gldtLedgerActor, setGldtLedgerActor] = useState<gldtService | null>(null);
 
-  const [totalBobHeld, setTotalBobHeld] = useState<string>('');
-  const [totalReBobMinted, setTotalReBobMinted] = useState<string>('');
+  const [totalGLDTHeld, setTotalGLDTHeld] = useState<string>('');
+  const [totalSGLDTMinted, setTotalSGLDTMinted] = useState<string>('');
 
   const [loggedInPrincipal, setLoggedInPrincipal] = useState('');
 
-  const bobFee: bigint = 1_000_000n;
-  const reBobFee: bigint = 10_000n;
+  const gldtFee: bigint = 10_000_000n;
+  const sGLDTFee: bigint = 1_000n;
 
   const fetchTotalTokens = async () => {
-    // const totalBobHeldResponse = await bobLedgerActor.icrc1_balance_of({
-    //   owner: Principal.fromText(reBobCanisterID),
+    // const totalGLDTHeldResponse = await gldtLedgerActor.icrc1_balance_of({
+    //   owner: Principal.fromText(sGLDTCanisterID),
     //   subaccount: [],
     // }); // Can't use plug actors as anonymous.
 
     // We will use the internet identity anonymous calls in the next update. ic0 will work for now.
-    const bobIcActor = await ic('7pail-xaaaa-aaaas-aabmq-cai'); // hard coding this because it will work in local still.
+    const gldtIcActor = await ic('6c7su-kiaaa-aaaar-qaira-cai'); // hard coding this because it will work in local still.
 
-    const totalBobHeldResponse = await bobIcActor.call('icrc1_balance_of', {
-      owner: Principal.fromText('qvwlv-uyaaa-aaaas-aidpq-cai'), // hard coding this because it won't work with local of reBobCanisterID
+    const totalGLDTHeldResponse = await gldtIcActor.call('icrc1_balance_of', {
+      owner: Principal.fromText('i2s4q-syaaa-aaaan-qz4sq-cai'), // hard coding this because it won't work with local of sGLDTCanisterID
       subaccount: [],
     });
 
-    //const totalReBobMintedResponse = await reBobActor.icrc1_total_supply();
+    //const totalSGLDTMintedResponse = await sGLDTActor.icrc1_total_supply();
 
-    setTotalBobHeld(bigintToFloatString(totalBobHeldResponse, 8));
-    //setTotalReBobMinted(bigintToFloatString(totalReBobMintedResponse));
+    setTotalGLDTHeld(bigintToFloatString(totalGLDTHeldResponse, 8));
+    //setTotalSGLDTMinted(bigintToFloatString(totalSGLDTMintedResponse));
   };
 
   const cleanUp = () => {
     setLoading(false);
-    if (bobLedgerActor && reBobActor) {
+    if (gldtLedgerActor && sGLDTActor) {
       fetchBalances();
       //fetchStats();
     } else {
@@ -108,25 +107,25 @@ function App() {
 
   useEffect(() => {
     // This code runs after `icpActor` and `icdvActor` have been updated.
-    //console.log('actors updated', bobLedgerActor, reBobActor);
+    //console.log('actors updated', gldtLedgerActor, sGLDTActor);
 
     fetchBalances();
     //fetchMinters();
     // Note: If `fetchBalances` depends on `icpActor` or `icdvActor`, you should ensure it's capable of handling null values or wait until these values are not null.
-  }, [bobLedgerActor, reBobActor]);
+  }, [gldtLedgerActor, sGLDTActor]);
 
   // useEffect(() => {
   //   // This code runs after `icpActor` and `icdvActor` have been updated.
-  //   //console.log("actors updated", icpActor, bobActor, bobLedgerActor, reBobActor);
+  //   //console.log("actors updated", icpActor, gldtActor, gldtLedgerActor, sGLDTActor);
 
   //   fetchStats();
   //   //fetchMinters();
   //   // Note: If `fetchBalances` depends on `icpActor` or `icdvActor`, you should ensure it's capable of handling null values or wait until these values are not null.
-  // }, [reBobActorTemp]);
+  // }, [sGLDTActorTemp]);
 
   // const fetchStats = async () => {
-  //   if (reBobActorTemp != null) {
-  //     const stats = await reBobActorTemp.stats();
+  //   if (sGLDTActorTemp != null) {
+  //     const stats = await sGLDTActorTemp.stats();
   //     console.log({ stats });
   //     await setStats(stats);
   //   }
@@ -141,67 +140,67 @@ function App() {
     }
   };
 
-  const getBobLedgerBalance = async () => {
-    if (bobLedgerActor === null) return;
+  const getGldtLedgerBalance = async () => {
+    if (gldtLedgerActor === null) return;
 
     if (!isValidPrincipal(loggedInPrincipal)) return;
 
-    const bobLedgerBalanceResponse = await bobLedgerActor.icrc1_balance_of({
+    const gldtLedgerBalanceResponse = await gldtLedgerActor.icrc1_balance_of({
       owner: Principal.fromText(loggedInPrincipal),
       subaccount: [],
     });
 
-    //console.log('Fetching balances...', { bobLedgerBalanceResponse });
+    //console.log('Fetching balances...', { gldtLedgerBalanceResponse });
 
-    setBobLedgerBalance(bobLedgerBalanceResponse);
+    setGldtLedgerBalance(gldtLedgerBalanceResponse);
   };
 
-  const getReBobLedgerBalance = async () => {
-    if (reBobActor === null) return;
+  const getSGLDTLedgerBalance = async () => {
+    if (sGLDTActor === null) return;
     if (!isValidPrincipal(loggedInPrincipal)) return;
-    const reBobLedgerBalanceResponse = await reBobActor.icrc1_balance_of({
+    const sGLDTLedgerBalanceResponse = await sGLDTActor.icrc1_balance_of({
       owner: Principal.fromText(loggedInPrincipal),
       subaccount: [],
     });
 
-    setreBobLedgerBalance(reBobLedgerBalanceResponse);
+    setsGLDTLedgerBalance(sGLDTLedgerBalanceResponse);
 
-    //console.log('Fetching balances...', { reBobLedgerBalanceResponse });
+    //console.log('Fetching balances...', { sGLDTLedgerBalanceResponse });
   };
 
-  const getBobLedgerAllowance = async () => {
-    if (bobLedgerActor === null) return;
-    const bobLedgerAllowanceResponse = await bobLedgerActor.icrc2_allowance({
+  const getGldtLedgerAllowance = async () => {
+    if (gldtLedgerActor === null) return;
+    const gldtLedgerAllowanceResponse = await gldtLedgerActor.icrc2_allowance({
       account: {
         owner: Principal.fromText(loggedInPrincipal),
         subaccount: [],
       },
-      spender: { owner: Principal.fromText(reBobCanisterID), subaccount: [] },
+      spender: { owner: Principal.fromText(sGLDTCanisterID), subaccount: [] },
     });
 
-    setBobLedgerAllowance(bobLedgerAllowanceResponse.allowance);
+    setGldtLedgerAllowance(gldtLedgerAllowanceResponse.allowance);
 
     // console.log(
-    //   'Fetching balances... (bobLedgerAllowanceResponse)',
-    //   bobLedgerAllowanceResponse.allowance
+    //   'Fetching balances... (gldtLedgerAllowanceResponse)',
+    //   gldtLedgerAllowanceResponse.allowance
     // ); // Need to add check if response was good.
   };
 
-  const getReBobLedgerAllowance = async () => {
-    if (reBobActor === null) return;
-    const reBobLedgerAllowanceResponse = await reBobActor.icrc2_allowance({
+  const getSGLDTLedgerAllowance = async () => {
+    if (sGLDTActor === null) return;
+    const sGLDTLedgerAllowanceResponse = await sGLDTActor.icrc2_allowance({
       account: {
         owner: Principal.fromText(loggedInPrincipal),
         subaccount: [],
       },
-      spender: { owner: Principal.fromText(reBobCanisterID), subaccount: [] },
+      spender: { owner: Principal.fromText(sGLDTCanisterID), subaccount: [] },
     });
 
-    setReBobLedgerAllowance(reBobLedgerAllowanceResponse.allowance); // Need to add check if response was good.
+    setsGLDTLedgerAllowance(sGLDTLedgerAllowanceResponse.allowance); // Need to add check if response was good.
 
     // console.log(
-    //   'Fetching balances... (reBobLedgerAllowanceResponse)',
-    //   reBobLedgerAllowanceResponse.allowance
+    //   'Fetching balances... (sGLDTLedgerAllowanceResponse)',
+    //   sGLDTLedgerAllowanceResponse.allowance
     // );
   };
 
@@ -214,20 +213,20 @@ function App() {
 
     //if (!isConnected) return;
 
-    // console.log('Fetching balances...', bobLedgerActor, reBobActor);
-    if (bobLedgerActor === null || reBobActor === null) return;
+    // console.log('Fetching balances...', gldtLedgerActor, sGLDTActor);
+    if (gldtLedgerActor === null || sGLDTActor === null) return;
     // Fetch balances (assuming these functions return balances in a suitable format)
 
-    getBobLedgerBalance();
-    getReBobLedgerBalance();
-    getBobLedgerAllowance();
-    getReBobLedgerAllowance();
+    getGldtLedgerBalance();
+    getSGLDTLedgerBalance();
+    getGldtLedgerAllowance();
+    getSGLDTLedgerAllowance();
   };
 
   const handleFailedWithdraw = async () => {
     setLoading(true);
 
-    //bobWithdraw(reBobLedgerAllowance); // 
+    //sGLDTWithdraw(sGLDTLedgerAllowance); // 
     setLoading(false);
   };
 
@@ -235,7 +234,7 @@ function App() {
   const handleFailedMint = async () => {
     setLoading(true);
 
-    //bobDeposit(bobLedgerAllowance);
+    //gldtDeposit(gldtLedgerAllowance);
 
     setLoading(false);
   };
@@ -243,30 +242,20 @@ function App() {
   return (
     <div className="App">
       <div>
-        <a href="https://aalgg-jaaaa-aaaak-afkwq-cai.icp0.io/" target="_blank">
-          <img src={viteLogo} className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://bob.fun" target="_blank">
+        <a href="https://app.sneeddao.com" target="_blank">
           <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-        <a href="https://proposals.networks/" target="_blank">
-          <span className="logo-stack">
-            <img
-              src={motokoShadowLogo}
-              className="logo motoko-shadow"
-              alt="Motoko logo"
-            />
-            <img src={motokoLogo} className="logo motoko" alt="Motoko logo" />
-          </span>
         </a>
       </div>
       <div>
-        <h1>BOB reHASH dapp</h1>
-        <h2>Enlarge your Bob</h2>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+          <h1>sVAULT</h1>
+          <img src={sgldtLogo} alt="sGLDT Logo" style={{ height: '40px', width: 'auto' }} />
+        </div>
+        <h2>Reduce the fees associated with Gold Token by Wrapping for sGLDT</h2>
         <h3>
-          Total Bob hashed:{' '}
-          {totalBobHeld !== '' ? (
-            <>{totalBobHeld} Bob</>
+          Total GLDT In Vault:{' '}
+          {totalGLDTHeld !== '' ? (
+            <>{totalGLDTHeld} GLDT</>
           ) : (
             <>
               <CircularProgress size={16} />
@@ -276,27 +265,27 @@ function App() {
       </div>
 
       <PlugLoginHandler
-        bobCanisterID={bobCanisterID}
-        setBobLedgerActor={setBobLedgerActor}
-        reBobCanisterID={reBobCanisterID}
-        setreBobActor={setreBobActor}
+        gldtCanisterID={gldtCanisterID}
+        setGldtLedgerActor={setGldtLedgerActor}
+        sGLDTCanisterID={sGLDTCanisterID}
+        setsGLDTActor={setsGLDTActor}
         loading={loading}
         setLoading={setLoading}
         isConnected={isConnected}
         setIsConnected={setIsConnected}
         connectionType={connectionType}
         setConnectionType={setConnectionType}
-        setBobLedgerBalance={setBobLedgerBalance}
-        setreBobLedgerBalance={setreBobLedgerBalance}
+        setGldtLedgerBalance={setGldtLedgerBalance}
+        setsGLDTLedgerBalance={setsGLDTLedgerBalance}
         loggedInPrincipal={loggedInPrincipal}
         setLoggedInPrincipal={setLoggedInPrincipal}
       />
 
       <InternetIdentityLoginHandler
-        bobCanisterID={bobCanisterID}
-        setBobLedgerActor={setBobLedgerActor}
-        reBobCanisterID={reBobCanisterID}
-        setreBobActor={setreBobActor}
+        gldtCanisterID={gldtCanisterID}
+        setGldtLedgerActor={setGldtLedgerActor}
+        sGLDTCanisterID={sGLDTCanisterID}
+        setsGLDTActor={setsGLDTActor}
         loading={loading}
         setLoading={setLoading}
         isConnected={isConnected}
@@ -305,7 +294,8 @@ function App() {
         setConnectionType={setConnectionType}
         loggedInPrincipal={loggedInPrincipal}
         setLoggedInPrincipal={setLoggedInPrincipal}
-      />
+              />
+      {(() => { console.log('App render - isConnected:', isConnected, 'connectionType:', connectionType); return null; })()}
       {!isConnected ? (
         <></>
       ) : (
@@ -326,21 +316,25 @@ function App() {
                 border: '3px solid lightgrey',
                 padding: '10px',
                 width: '100%',
+                backgroundColor: 'rgba(192, 192, 192, 0.3)',
               }}
             >
-              <h2>reHASH Bobs:</h2>
-              <h3>$Bob Balance: {bigintToFloatString(bobLedgerBalance)}</h3>
-              <ReBobMintingField
+              <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <img src={gldtLogo} alt="GLDT Logo" style={{ height: '24px', width: 'auto' }} />
+                Wrap GLDT:
+              </h2>
+              <h3>$GLDT Balance: {bigintToFloatString(gldtLedgerBalance)}</h3>
+              <GLDTMintingField
                 loading={loading}
                 setLoading={setLoading}
-                bobLedgerBalance={bobLedgerBalance}
-                bobFee={bobFee}
+                gldtLedgerBalance={gldtLedgerBalance}
+                gldtFee={gldtFee}
                 isConnected={isConnected}
-                reBobCanisterID={reBobCanisterID}
-                bobLedgerActor={bobLedgerActor}
+                sGLDTCanisterID={sGLDTCanisterID}
+                gldtLedgerActor={gldtLedgerActor}
                 cleanUp={cleanUp}
-                reBobActor={reBobActor}
-                minimumTransactionAmount={3000000n}
+                sGLDTActor={sGLDTActor}
+                minimumTransactionAmount={50000000n}
               />
               <p></p>
             </div>
@@ -350,21 +344,26 @@ function App() {
                 padding: '10px',
                 width: '100%',
                 marginTop: '16px',
+                backgroundColor: 'rgba(192, 192, 192, 0.3)',
               }}
             >
-              <h2>unHASH reBobs: </h2>
+              <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <img src={sgldtLogo} alt="sGLDT Logo" style={{ height: '24px', width: 'auto' }} />
+                Unwrap sGLDT:
+              </h2>
+              <p style={{ fontSize: '14px', color: '#666', marginTop: '4px', marginBottom: '8px' }}>The Vault charges a .1 fee per transaction to redeem sGLDT back to GLDT</p>
               <h3>
-                $reBob Balance: {bigintToFloatString(reBobLedgerBalance, 6)}
+                $sGLDT Balance: {bigintToFloatString(sGLDTLedgerBalance, 8)}
               </h3>
-              <BobWithdrawField
+              <SGLDTWithdrawField
                 loading={loading}
                 setLoading={setLoading}
-                reBobLedgerBalance={reBobLedgerBalance}
-                reBobFee={reBobFee}
-                bobFee={bobFee}
+                sGLDTLedgerBalance={sGLDTLedgerBalance}
+                sGLDTFee={sGLDTFee}
+                gldtFee={gldtFee}
                 isConnected={isConnected}
-                reBobActor={reBobActor}
-                reBobCanisterID={reBobCanisterID}
+                sGLDTActor={sGLDTActor}
+                sGLDTCanisterID={sGLDTCanisterID}
                 cleanUp={cleanUp}
               />
             </div>
@@ -375,6 +374,7 @@ function App() {
                 padding: '10px',
                 width: '100%',
                 marginTop: '16px',
+                backgroundColor: 'rgba(192, 192, 192, 0.3)',
               }}
             >
               <TokenManagement
@@ -382,18 +382,18 @@ function App() {
                 setLoading={setLoading}
                 tokens={[
                   {
-                    tokenActor: bobLedgerActor,
-                    tokenFee: bobFee,
-                    tokenTicker: 'Bob',
+                    tokenActor: gldtLedgerActor,
+                    tokenFee: gldtFee,
+                    tokenTicker: 'GLDT',
                     tokenDecimals: 8,
-                    tokenLedgerBalance: bobLedgerBalance,
+                    tokenLedgerBalance: gldtLedgerBalance,
                   },
                   {
-                    tokenActor: reBobActor,
-                    tokenFee: reBobFee,
-                    tokenTicker: 'reBob',
-                    tokenDecimals: 6,
-                    tokenLedgerBalance: reBobLedgerBalance,
+                    tokenActor: sGLDTActor,
+                    tokenFee: sGLDTFee,
+                    tokenTicker: 'sGLDT',
+                    tokenDecimals: 8,
+                    tokenLedgerBalance: sGLDTLedgerBalance,
                   },
                 ]}
                 cleanUp={cleanUp}
@@ -405,7 +405,7 @@ function App() {
         </>
       )}
       <p className="read-the-docs">
-        Bitcorn Labs presents: build on Bob Click logos to learn more.
+        Bitcorn Labs presents: build on GLDT Click logos to learn more.
       </p>
     </div>
   );

@@ -3,31 +3,31 @@ import { TextField, ThemeProvider } from '@mui/material';
 import theme from '../theme';
 import bigintToFloatString from '../bigIntToFloatString';
 import { Principal } from '@dfinity/principal';
-import { _SERVICE as bobService } from '../declarations/nns-ledger/index.d'; // why is this icpService?
-import { _SERVICE as reBobService } from '../declarations/service_hack/service';
+import { _SERVICE as gldtService } from '../declarations/nns-ledger/index.d'; // why is this icpService?
+import { _SERVICE as sGLDTService } from '../declarations/service_hack/service';
 import ShowTransactionStatus from './ShowTransactionStatus';
 
 interface BobWithdrawFieldProps {
   loading: boolean;
   setLoading: (value: boolean) => void;
-  reBobLedgerBalance: bigint;
-  reBobFee: bigint;
-  bobFee: bigint;
+  sGLDTLedgerBalance: bigint;
+  sGLDTFee: bigint;
+  gldtFee: bigint;
   isConnected: boolean;
-  reBobActor: reBobService | null;
-  reBobCanisterID: string;
+  sGLDTActor: sGLDTService | null;
+  sGLDTCanisterID: string;
   cleanUp: () => void;
 }
 
 const BobWithdrawField: React.FC<BobWithdrawFieldProps> = ({
   loading,
   setLoading,
-  reBobLedgerBalance,
-  bobFee,
-  reBobFee,
+  sGLDTLedgerBalance,
+  gldtFee,
+  sGLDTFee,
   isConnected,
-  reBobActor,
-  reBobCanisterID,
+  sGLDTActor,
+  sGLDTCanisterID,
   cleanUp,
 }) => {
   const [reBobFieldValue, setReBobFieldValue] = useState<string>('');
@@ -47,24 +47,24 @@ const BobWithdrawField: React.FC<BobWithdrawFieldProps> = ({
     }
 
     if (
-      reBobFieldNatValue + bobFee + reBobFee > reBobLedgerBalance ||
-      reBobLedgerBalance < minimumTransactionAmount
+      reBobFieldNatValue + gldtFee + sGLDTFee > sGLDTLedgerBalance ||
+      sGLDTLedgerBalance < minimumTransactionAmount
     ) {
-      // Cover the bob transfer from backend fee. Cover the reBob approval fee. The reBob is burned without a fee applied.
-      addStatus('You do not have enough reBob.');
+      // Cover the gldt transfer from backend fee. Cover the sGLDT approval fee. The sGLDT is burned without a fee applied.
+      addStatus('You do not have enough sGLDT.');
       return;
     }
 
-    if (!reBobActor) {
-      addStatus('reBob actor not loaded!');
+    if (!sGLDTActor) {
+      addStatus('sGLDT actor not loaded!');
       return;
     }
 
     setLoading(true);
 
     // This step isn't needed.
-    const approvalResult = await approveReBob(
-      reBobFieldNatValue + bobFee + reBobFee
+    const approvalResult = await approveSGLDT(
+      reBobFieldNatValue + gldtFee + sGLDTFee
     );
 
     if (!approvalResult) {
@@ -72,10 +72,10 @@ const BobWithdrawField: React.FC<BobWithdrawFieldProps> = ({
       return;
     }
 
-    const result = await bobWithdraw(reBobFieldNatValue + bobFee);
+    const result = await gldtWithdraw(reBobFieldNatValue + gldtFee);
 
     if (!result) {
-      addStatus('reBob was approved, but was not transferred.');
+      addStatus('sGLDT was approved, but was not transferred.');
     }
 
     await cleanUp();
@@ -83,25 +83,25 @@ const BobWithdrawField: React.FC<BobWithdrawFieldProps> = ({
     setReBobFieldValue('');
   };
 
-  const approveReBob = async (amountInE8s: bigint) => {
-    if (!reBobActor) return false;
+  const approveSGLDT = async (amountInE8s: bigint) => {
+    if (!sGLDTActor) return false;
 
     addStatus(
-      `Requesting to approve ${bigintToFloatString(amountInE8s, 6)} reBob.`
+      `Requesting to approve ${bigintToFloatString(amountInE8s, 6)} sGLDT.`
     );
 
     console.log('before');
 
     try {
-      const approvalResult = await reBobActor.icrc2_approve({
-        amount: amountInE8s, // Cover the fee of sending the bob back to the user.
+      const approvalResult = await sGLDTActor.icrc2_approve({
+        amount: amountInE8s, // Cover the fee of sending the gldt back to the user.
         // Adjust with your canister ID and parameters
         spender: {
-          owner: await Principal.fromText(reBobCanisterID),
+          owner: await Principal.fromText(sGLDTCanisterID),
           subaccount: [],
         },
         memo: [],
-        fee: [reBobFee],
+        fee: [sGLDTFee],
         created_at_time: [BigInt(Date.now()) * 1000000n],
         expires_at: [
           BigInt(Date.now()) * 1000000n + 5n * 60n * 1000n * 1000000n,
@@ -116,24 +116,24 @@ const BobWithdrawField: React.FC<BobWithdrawFieldProps> = ({
 
       if ('Ok' in approvalResult) {
         addStatus(
-          `${bigintToFloatString(amountInE8s, 6)} reBob approved for transfer!`
+          `${bigintToFloatString(amountInE8s, 6)} sGLDT approved for transfer!`
         );
         return true;
       } else {
-        addStatus('reBob was not approved for transfer.');
+        addStatus('sGLDT was not approved for transfer.');
         return false;
       }
     } catch (error) {
-      console.error('Error occurred when approving reBob: ', error);
+      console.error('Error occurred when approving sGLDT: ', error);
       addStatus(
-        "Error occurred when approving reBob (Check your web browser's console)"
+        "Error occurred when approving sGLDT (Check your web browser's console)"
       );
     }
     return false;
   };
 
-  const bobWithdraw = async (amountInE8s: bigint) => {
-    if (!reBobActor) {
+  const gldtWithdraw = async (amountInE8s: bigint) => {
+    if (!sGLDTActor) {
       return false;
     }
 
@@ -142,36 +142,36 @@ const BobWithdrawField: React.FC<BobWithdrawFieldProps> = ({
         `Depositing ${bigintToFloatString(
           amountInE8s,
           6
-        )} reBob to burn for Bob.`
+        )} sGLDT to burn for GLDT.`
       );
-      const result = await reBobActor.withdraw([], amountInE8s);
+      const result = await sGLDTActor.withdraw([], amountInE8s);
       if ('ok' in result) {
         addStatus(
           `Swapped ${bigintToFloatString(
             amountInE8s,
             6
-          )} reBob for ${bigintToFloatString(
+          )} sGLDT for ${bigintToFloatString(
             amountInE8s,
             8
-          )} Bob! reBob burned on block ${
+          )} GLDT! sGLDT burned on block ${
             result.ok[0]
-          }. Bob transferred on block ${result.ok[1]}`
+          }. GLDT transferred on block ${result.ok[1]}`
         );
         return true;
       } else {
         addStatus(
-          "failed to burn reBob and return Bob (Check your web browser's console)"
+          "failed to burn sGLDT and return GLDT (Check your web browser's console)"
         );
         console.error(
-          'failed to burn reBob and return Bob',
+          'failed to burn sGLDT and return GLDT',
           result.err.toString()
         );
         return false;
       }
     } catch (error) {
-      console.error('Burning reBob and returning Bob failed:', error);
+      console.error('Burning sGLDT and returning GLDT failed:', error);
       addStatus(
-        "Burning reBob and returning Bob failed (Check your web browser's console)"
+        "Burning sGLDT and returning GLDT failed (Check your web browser's console)"
       );
       return false;
     }
@@ -191,32 +191,32 @@ const BobWithdrawField: React.FC<BobWithdrawFieldProps> = ({
   };
 
   useEffect(() => {
-    const reBobNatValue =
+    const sGLDTNatValue =
       reBobFieldValue && reBobFieldValue !== '.'
-        ? BigInt((parseFloat(reBobFieldValue) * 1_000_000).toFixed(0)) // Convert to Nat
+        ? BigInt((parseFloat(reBobFieldValue) * 1_0000_0000).toFixed(0)) // Convert to Nat with 8 decimals
         : 0n;
 
-    // console.log(bobNatValue);
-    setButtonDisabled(reBobNatValue + bobFee + reBobFee > reBobLedgerBalance);
-    setTextFieldValueTooLow(reBobNatValue < minimumTransactionAmount);
+    // console.log(sGLDTNatValue);
+    setButtonDisabled(sGLDTNatValue + gldtFee + sGLDTFee > sGLDTLedgerBalance);
+    setTextFieldValueTooLow(sGLDTNatValue < minimumTransactionAmount);
     setTextFieldErrored(
-      (reBobLedgerBalance < minimumTransactionAmount && reBobNatValue > 0) ||
-        (reBobLedgerBalance >= minimumTransactionAmount &&
-          reBobNatValue + bobFee + reBobFee > reBobLedgerBalance)
+      (sGLDTLedgerBalance < minimumTransactionAmount && sGLDTNatValue > 0) ||
+        (sGLDTLedgerBalance >= minimumTransactionAmount &&
+          sGLDTNatValue + gldtFee + sGLDTFee > sGLDTLedgerBalance)
     );
-    setReBobFieldNatValue(reBobNatValue);
-  }, [reBobFieldValue, reBobLedgerBalance]);
+    setReBobFieldNatValue(sGLDTNatValue);
+  }, [reBobFieldValue, sGLDTLedgerBalance]);
 
   return (
     <ThemeProvider theme={theme}>
-      {reBobLedgerBalance < minimumTransactionAmount ? (
+      {sGLDTLedgerBalance < minimumTransactionAmount ? (
         <>
           <div>
             {`You need at least ${bigintToFloatString(
               minimumTransactionAmount,
               6
             )}
-            $reBob to unHASH to Bob`}
+            $sGLDT to unwrap to GLDT`}
           </div>
         </>
       ) : (
@@ -232,13 +232,13 @@ const BobWithdrawField: React.FC<BobWithdrawFieldProps> = ({
       >
         <div>
           <TextField
-            label="reBob"
+            label="sGLDT"
             variant="filled"
             value={reBobFieldValue}
             onChange={handleBobFieldChange}
             helperText={
               buttonDisabled
-                ? "You don't have enough reBob!"
+                ? "You don't have enough sGLDT!"
                 : textFieldValueTooLow
                 ? `You must input at least ${bigintToFloatString(
                     minimumTransactionAmount,
@@ -268,7 +268,7 @@ const BobWithdrawField: React.FC<BobWithdrawFieldProps> = ({
               justifyContent: 'center',
             }}
           >
-            {'Return to Bobs'}
+            {'Unwrap to GLDT'}
           </button>
         </div>
       </div>

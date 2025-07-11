@@ -1,39 +1,39 @@
 import { useEffect, useState } from 'react';
-import { idlFactory as reBobFactory } from '../declarations/backend';
-import { _SERVICE as reBobService } from '../declarations/service_hack/service'; // changed to service.d because dfx generate would remove the export line from index.d
+import { idlFactory as sGLDTFactory } from '../declarations/backend';
+import { _SERVICE as sGLDTService } from '../declarations/service_hack/service'; // changed to service.d because dfx generate would remove the export line from index.d
 import { idlFactory as icpFactory } from '../declarations/nns-ledger';
-import { _SERVICE as bobService } from '../declarations/nns-ledger/index.d';
+import { _SERVICE as gldtService } from '../declarations/nns-ledger/index.d';
 
 interface PlugLoginHandlerProps {
-  bobCanisterID: string;
-  setBobLedgerActor: (value: bobService | null) => void;
-  reBobCanisterID: string;
-  setreBobActor: (value: reBobService | null) => void;
+  gldtCanisterID: string;
+  setGldtLedgerActor: (value: gldtService | null) => void;
+  sGLDTCanisterID: string;
+  setsGLDTActor: (value: sGLDTService | null) => void;
   loading: boolean;
   setLoading: (value: boolean) => void;
   isConnected: boolean;
   setIsConnected: (value: boolean) => void;
   connectionType: string;
   setConnectionType: (value: string) => void;
-  setBobLedgerBalance: (value: bigint) => void;
-  setreBobLedgerBalance: (value: bigint) => void;
+  setGldtLedgerBalance: (value: bigint) => void;
+  setsGLDTLedgerBalance: (value: bigint) => void;
   loggedInPrincipal: string;
   setLoggedInPrincipal: (value: string) => void;
 }
 
 const PlugLoginHandler: React.FC<PlugLoginHandlerProps> = ({
-  bobCanisterID,
-  setBobLedgerActor,
-  reBobCanisterID,
-  setreBobActor,
+  gldtCanisterID,
+  setGldtLedgerActor,
+  sGLDTCanisterID,
+  setsGLDTActor,
   loading,
   setLoading,
   isConnected,
   setIsConnected,
   connectionType,
   setConnectionType,
-  setBobLedgerBalance,
-  setreBobLedgerBalance,
+  setGldtLedgerBalance,
+  setsGLDTLedgerBalance,
   loggedInPrincipal,
   setLoggedInPrincipal,
 }) => {
@@ -77,18 +77,18 @@ const PlugLoginHandler: React.FC<PlugLoginHandlerProps> = ({
   };
 
   const setUpActors = async () => {
-    console.log('Setting up actors...', bobCanisterID, reBobCanisterID);
+    console.log('Setting up actors...', gldtCanisterID, sGLDTCanisterID);
 
-    setreBobActor(
+    setsGLDTActor(
       await window.ic.plug.createActor({
-        canisterId: reBobCanisterID,
-        interfaceFactory: reBobFactory,
+        canisterId: sGLDTCanisterID,
+        interfaceFactory: sGLDTFactory,
       })
     );
 
-    setBobLedgerActor(
+    setGldtLedgerActor(
       await window.ic.plug.createActor({
-        canisterId: bobCanisterID,
+        canisterId: gldtCanisterID,
         interfaceFactory: icpFactory,
       })
     );
@@ -100,12 +100,12 @@ const PlugLoginHandler: React.FC<PlugLoginHandlerProps> = ({
     if (isConnected && connectionType === 'plug') {
       try {
         await window.ic.plug.disconnect();
-        setreBobActor(null);
-        setBobLedgerActor(null);
+        setsGLDTActor(null);
+        setGldtLedgerActor(null);
         setIsConnected(false);
         setConnectionType('');
-        setBobLedgerBalance(0n);
-        setreBobLedgerBalance(0n);
+        setGldtLedgerBalance(0n);
+        setsGLDTLedgerBalance(0n);
       } catch (error) {
         console.error('Logout failed:', error);
       }
@@ -121,7 +121,7 @@ const PlugLoginHandler: React.FC<PlugLoginHandlerProps> = ({
       if (!connected) {
         const pubkey = await window.ic.plug.requestConnect({
           // whitelist, host, and onConnectionUpdate need to be defined or imported appropriately
-          whitelist: [bobCanisterID, reBobCanisterID],
+          whitelist: [gldtCanisterID, sGLDTCanisterID],
           host:
             process.env.DFX_NETWORK === 'local'
               ? 'http://127.0.0.1:4943'

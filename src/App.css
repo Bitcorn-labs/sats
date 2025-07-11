@@ -26,11 +26,7 @@
   }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .logo.react {
-    animation: logo-spin infinite 60s linear;
-  }
-}
+/* Removed spinning animation while keeping hover effects */
 
 .logo.motoko:hover {
   filter: drop-shadow(0 0 2em #61dafbaa);

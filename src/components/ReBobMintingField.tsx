@@ -3,33 +3,33 @@ import { TextField, ThemeProvider, createTheme } from '@mui/material';
 import theme from '../theme';
 import bigintToFloatString from '../bigIntToFloatString';
 import { Principal } from '@dfinity/principal';
-import { _SERVICE as bobService } from '../declarations/nns-ledger/index.d'; // why is this icpService?
-import { _SERVICE as reBobService } from '../declarations/service_hack/service';
+import { _SERVICE as gldtService } from '../declarations/nns-ledger/index.d'; // why is this icpService?
+import { _SERVICE as sGLDTService } from '../declarations/service_hack/service';
 import ShowTransactionStatus from './ShowTransactionStatus';
 
 interface ReBobMintingFieldProps {
   loading: boolean;
   setLoading: (value: boolean) => void;
-  bobLedgerBalance: bigint;
-  bobFee: bigint;
+  gldtLedgerBalance: bigint;
+  gldtFee: bigint;
   isConnected: boolean;
-  reBobCanisterID: string;
+  sGLDTCanisterID: string;
   cleanUp: () => void;
-  bobLedgerActor: bobService | null;
-  reBobActor: reBobService | null;
+  gldtLedgerActor: gldtService | null;
+  sGLDTActor: sGLDTService | null;
   minimumTransactionAmount: bigint;
 }
 
 const ReBobMintingField: React.FC<ReBobMintingFieldProps> = ({
   loading,
   setLoading,
-  bobLedgerBalance,
-  bobFee,
+  gldtLedgerBalance,
+  gldtFee,
   isConnected,
-  reBobCanisterID,
+  sGLDTCanisterID,
   cleanUp,
-  bobLedgerActor,
-  reBobActor,
+  gldtLedgerActor,
+  sGLDTActor,
   minimumTransactionAmount,
 }) => {
   const [bobFieldValue, setBobFieldValue] = useState<string>('');
@@ -56,31 +56,31 @@ const ReBobMintingField: React.FC<ReBobMintingFieldProps> = ({
     }
 
     if (
-      bobFieldNatValue + bobFee * 2n > bobLedgerBalance ||
-      bobLedgerBalance < minimumTransactionAmount
+      bobFieldNatValue + gldtFee * 2n > gldtLedgerBalance ||
+      gldtLedgerBalance < minimumTransactionAmount
     ) {
-      addStatus('You do not have enough Bob.');
+      addStatus('You do not have enough GLDT.');
       return;
     }
 
-    if (!bobLedgerActor || !reBobActor) {
+    if (!gldtLedgerActor || !sGLDTActor) {
       addStatus('Actors not loaded!');
       return;
     }
 
     setLoading(true);
 
-    const approvalResult = await approveBob(bobFieldNatValue + bobFee);
+    const approvalResult = await approveGldt(bobFieldNatValue + gldtFee);
 
     if (!approvalResult) {
       cleanUp();
       return;
     }
 
-    const result = await bobDeposit(bobFieldNatValue);
+    const result = await gldtDeposit(bobFieldNatValue);
 
     if (!result) {
-      addStatus('Bob was approved, but was not transferred.');
+      addStatus('GLDT was approved, but was not transferred.');
     }
 
     cleanUp();
@@ -88,23 +88,23 @@ const ReBobMintingField: React.FC<ReBobMintingFieldProps> = ({
     setBobFieldValue('');
   };
 
-  const approveBob = async (amountInE8s: bigint) => {
-    if (!bobLedgerActor) return false;
+  const approveGldt = async (amountInE8s: bigint) => {
+    if (!gldtLedgerActor) return false;
 
     addStatus(
-      `Requesting to approve ${bigintToFloatString(amountInE8s, 8)} Bob.`
+      `Requesting to approve ${bigintToFloatString(amountInE8s, 8)} GLDT.`
     );
 
     try {
-      const approvalResult = await bobLedgerActor.icrc2_approve({
-        amount: amountInE8s, // Approve amount and the fee to send bob back during icrc2_transfer_from() in deposit() function
+      const approvalResult = await gldtLedgerActor.icrc2_approve({
+        amount: amountInE8s, // Approve amount and the fee to send gldt back during icrc2_transfer_from() in deposit() function
         // Adjust with your canister ID and parameters
         spender: {
-          owner: await Principal.fromText(reBobCanisterID),
+          owner: await Principal.fromText(sGLDTCanisterID),
           subaccount: [],
         },
         memo: [],
-        fee: [bobFee],
+        fee: [gldtFee],
         created_at_time: [BigInt(Date.now()) * 1000000n],
         expires_at: [],
         expected_allowance: [],
@@ -113,58 +113,58 @@ const ReBobMintingField: React.FC<ReBobMintingFieldProps> = ({
 
       if ('Ok' in approvalResult) {
         addStatus(
-          `${bigintToFloatString(amountInE8s, 8)} Bob approved for transfer!`
+          `${bigintToFloatString(amountInE8s, 8)} GLDT approved for transfer!`
         );
         return true;
       } else {
-        addStatus('Bob was not approved for transfer.');
+        addStatus('GLDT was not approved for transfer.');
         return false;
       }
     } catch (error) {
-      console.error('Error occurred when approving Bob:', error);
+      console.error('Error occurred when approving GLDT:', error);
       addStatus(
-        "Error occurred when approving Bob (Check your web browser's console)"
+        "Error occurred when approving GLDT (Check your web browser's console)"
       );
       return false;
     }
   };
 
-  const bobDeposit = async (amountInE8s: bigint) => {
-    if (!reBobActor) {
+  const gldtDeposit = async (amountInE8s: bigint) => {
+    if (!sGLDTActor) {
       return false;
     }
 
     try {
       addStatus(
-        `Depositing ${bigintToFloatString(amountInE8s, 8)} Bob to mint reBob.`
+        `Depositing ${bigintToFloatString(amountInE8s, 8)} GLDT to mint sGLDT.`
       );
-      const result = await reBobActor.deposit([], amountInE8s);
+      const result = await sGLDTActor.deposit([], amountInE8s);
 
       if ('ok' in result) {
         addStatus(
           `Swapped ${bigintToFloatString(
             amountInE8s,
             8
-          )} Bob for ${bigintToFloatString(
+          )} GLDT for ${bigintToFloatString(
             amountInE8s,
             6
-          )} reBob! Bob transferred on block ${result.ok[0].toString()}. ReBob minted on block ${result.ok[1].toString()}.`
+          )} sGLDT! GLDT transferred on block ${result.ok[0].toString()}. sGLDT minted on block ${result.ok[1].toString()}.`
         );
         return true;
       } else {
         addStatus(
-          "Failed to deposit Bob to the reBob hasher (Check your web browser's console)"
+          "Failed to deposit GLDT to mint sGLDT (Check your web browser's console)"
         );
         console.error(
-          'Failed to deposit Bob to the reBob hasher: ',
+          'Failed to deposit GLDT to mint sGLDT: ',
           result.err.toString()
         );
         return false;
       }
     } catch (error) {
-      console.error('Failed when depositing Bob to the reBob hasher:', error);
+      console.error('Failed when depositing GLDT to mint sGLDT:', error);
       addStatus(
-        "Failed when depositing Bob to the reBob hasher (Check your web browser's console)"
+        "Failed when depositing GLDT to mint sGLDT (Check your web browser's console)"
       );
       return false;
     }
@@ -175,29 +175,29 @@ const ReBobMintingField: React.FC<ReBobMintingFieldProps> = ({
   };
 
   useEffect(() => {
-    const bobNatValue =
+    const gldtNatValue =
       bobFieldValue && bobFieldValue !== '.'
         ? BigInt((parseFloat(bobFieldValue) * 1_0000_0000).toFixed(0)) // Convert to Nat
         : 0n;
 
-    // console.log(bobNatValue);
-    setButtonDisabled(bobNatValue + bobFee * 2n > bobLedgerBalance);
-    setTextFieldValueTooLow(bobNatValue < minimumTransactionAmount);
+    // console.log(gldtNatValue);
+    setButtonDisabled(gldtNatValue + gldtFee * 2n > gldtLedgerBalance);
+    setTextFieldValueTooLow(gldtNatValue < minimumTransactionAmount);
     setTextFieldErrored(
-      (bobLedgerBalance < minimumTransactionAmount && bobNatValue > 0) ||
-        (bobLedgerBalance >= minimumTransactionAmount &&
-          bobNatValue + bobFee * 2n > bobLedgerBalance)
+      (gldtLedgerBalance < minimumTransactionAmount && gldtNatValue > 0) ||
+        (gldtLedgerBalance >= minimumTransactionAmount &&
+          gldtNatValue + gldtFee * 2n > gldtLedgerBalance)
     );
-    setBobFieldNatValue(bobNatValue);
-  }, [bobFieldValue, bobLedgerBalance]);
+    setBobFieldNatValue(gldtNatValue);
+  }, [bobFieldValue, gldtLedgerBalance]);
 
   return (
     <ThemeProvider theme={theme}>
-      {bobLedgerBalance <= minimumTransactionAmount ? (
+      {gldtLedgerBalance <= minimumTransactionAmount ? (
         <>
           <div>
             You need at least {bigintToFloatString(minimumTransactionAmount, 8)}{' '}
-            $Bob to hash to reBob
+            $GLDT to wrap to sGLDT
           </div>
         </>
       ) : (
@@ -212,13 +212,13 @@ const ReBobMintingField: React.FC<ReBobMintingFieldProps> = ({
       >
         <div>
           <TextField
-            label="Bob"
+            label="GLDT"
             variant="filled"
             value={bobFieldValue}
             onChange={handleBobFieldChange}
             helperText={
               buttonDisabled
-                ? "You don't have enough Bob!"
+                ? "You don't have enough GLDT!"
                 : textFieldValueTooLow
                 ? `You must input at least ${bigintToFloatString(
                     minimumTransactionAmount,
@@ -248,7 +248,7 @@ const ReBobMintingField: React.FC<ReBobMintingFieldProps> = ({
               justifyContent: 'center',
             }}
           >
-            {'Enlarge Bobs'}
+            {'Wrap GLDT'}
           </button>
         </div>
       </div>
