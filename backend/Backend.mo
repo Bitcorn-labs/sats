@@ -554,9 +554,13 @@ shared ({ caller = _owner }) actor class Token(
   public shared ({ caller }) func withdraw(subaccount : ?[Nat8], amount : Nat) : async Result.Result<(Nat, Nat), Text> {
     log.add(debug_show (Time.now()) # "trying withdraw " # debug_show (subaccount));
 
-    if (amount <= 20_000_000) {
+    let gldt_ledger_fee : Nat = 10_000_000;
+    let gldt_conversion_fee : Nat = 2 * gldt_ledger_fee;
+    let gldt_total_fee = gldt_ledger_fee + gldt_conversion_fee;
+
+    if (amount <= gldt_total_fee) {
       // Minimum amount to ensure user gets at least 0.1 GLDT after fees (0.1 GLDT canister fee)
-      return #err("amount too low - must be at least 0.2 GLDT to account for fees");
+      return #err("amount too low - must be at least 0.3 GLDT to account for fees");
     };
 
     let burnResult = await* icrc1().burn(
@@ -584,16 +588,17 @@ shared ({ caller = _owner }) actor class Token(
         };
         fee = null;
         from_subaccount = null;
-      memo = ?Blob.toArray("\d8\d9\b4\5f\41\5d\5a\c3\be\e5\21\2c\10\f4\bb\6d\07\52\7d\01\17\7e\58\e0\13\03\39\90\00\c5\a8\94"); //sGLDT Withdraw
+        memo = ?Blob.toArray("\d8\d9\b4\5f\41\5d\5a\c3\be\e5\21\2c\10\f4\bb\6d\07\52\7d\01\17\7e\58\e0\13\03\39\90\00\c5\a8\94"); //sGLDT Withdraw
         created_at_time = ?time64();
-      amount = amount - 10_000_000; // keep this amount as part of the transfer fee to keep our GLDT from being drained.
+        amount = amount - gldt_total_fee; // keep this amount as part of the transfer fee to keep our GLDT from being drained.
+      },
     });
 
     let block = switch (transferResult) {
       case (#Ok(block)) {
         // Track the canister fee
-        total_withdraw_fees := total_withdraw_fees + 10_000_000;
-        accumulated_fees := accumulated_fees + 10_000_000;
+        total_withdraw_fees := total_withdraw_fees + gldt_ledger_fee;
+        accumulated_fees := accumulated_fees + gldt_conversion_fee;
         block;
       };
       case (#Err(err)) {

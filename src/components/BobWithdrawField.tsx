@@ -62,6 +62,8 @@ const BobWithdrawField: React.FC<BobWithdrawFieldProps> = ({
 
     setLoading(true);
 
+// Snassy: This code is not needed (we don't need approval for sGLDT -> GLDT)
+/*
     // This step isn't needed.
     const approvalResult = await approveSGLDT(
       reBobFieldNatValue + gldtFee + sGLDTFee
@@ -71,8 +73,11 @@ const BobWithdrawField: React.FC<BobWithdrawFieldProps> = ({
       await cleanUp();
       return;
     }
+*/
 
-    const result = await gldtWithdraw(reBobFieldNatValue + gldtFee);
+// Snassy: We don't need to add any fee here!
+    const result = await gldtWithdraw(reBobFieldNatValue);
+    // const result = await gldtWithdraw(reBobFieldNatValue + gldtFee);
 
     if (!result) {
       addStatus('sGLDT was approved, but was not transferred.');
