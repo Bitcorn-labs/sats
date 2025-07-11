@@ -566,7 +566,7 @@ shared ({ caller = _owner }) actor class Token(
           case (null) null;
           case (?val) ?Blob.fromArray(val);
         }; // The subaccount from which tokens are burned.
-        amount = amount - 10_000_000; // Burn amount minus canister fee to maintain 1:1 parity
+        amount = amount; // Burn the full amount requested by user
         memo = ?("\d8\d9\b4\5f\41\5d\5a\c3\be\e5\21\2c\10\f4\bb\6d\07\52\7d\01\17\7e\58\e0\13\03\39\90\00\c5\a8\94" : Blob); //sGLDT Withdraw
         created_at_time = ?time64(); // The time the burn operation was created.
       },
@@ -609,7 +609,7 @@ shared ({ caller = _owner }) actor class Token(
                 case (?val) ?Blob.fromArray(val);
               }; // The subaccount from which tokens are burned.
             };
-            amount = amount - 10_000_000; // Remint the same amount that was burned
+            amount = amount; // Remint the same amount that was burned
             memo = ?("\d8\d9\b4\5f\41\5d\5a\c3\be\e5\21\2c\10\f4\bb\6d\07\52\7d\01\17\7e\58\e0\13\03\39\90\00\c5\a8\94" : Blob); //sGLDT Withdraw
             created_at_time = ?time64(); // The time the burn operation was created.
           },
