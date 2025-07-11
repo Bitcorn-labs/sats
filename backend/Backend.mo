@@ -592,7 +592,7 @@ shared ({ caller = _owner }) actor class Token(
         created_at_time = ?time64();
         amount = amount - gldt_total_fee; // keep this amount as part of the transfer fee to keep our GLDT from being drained.
       },
-    });
+    );
 
     let block = switch (transferResult) {
       case (#Ok(block)) {
