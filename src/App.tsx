@@ -351,7 +351,7 @@ function App() {
                 <img src={sgldtLogo} alt="sGLDT Logo" style={{ height: '24px', width: 'auto' }} />
                 Unwrap sGLDT:
               </h2>
-              <p style={{ fontSize: '14px', color: '#666', marginTop: '4px', marginBottom: '8px' }}>The Vault charges a .1 fee per transaction to redeem sGLDT back to GLDT</p>
+              <p style={{ fontSize: '14px', color: '#222', marginTop: '4px', marginBottom: '8px' }}>The Vault charges a .2 fee per transaction to redeem sGLDT back to GLDT</p>
               <h3>
                 $sGLDT Balance: {bigintToFloatString(sGLDTLedgerBalance, 8)}
               </h3>
