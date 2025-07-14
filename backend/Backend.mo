@@ -369,26 +369,6 @@ shared ({ caller = _owner }) actor class Token(
     return cert_store;
   };
 
-  private func calculate_dead_gldt() : async Nat {
-    try {
-      let canister_gldt_balance = await BOBLedger.icrc1_balance_of({
-        owner = Principal.fromActor(this);
-        subaccount = null;
-      });
-      
-      let circulating_sgldt = icrc1().total_supply();
-      
-      // "Dead" GLDT = excess GLDT not backing circulating sGLDT
-      if (canister_gldt_balance > circulating_sgldt) {
-        return canister_gldt_balance - circulating_sgldt;
-      } else {
-        return 0;
-      };
-    } catch (e) {
-      // If we can't query the GLDT balance, return 0
-      return 0;
-    };
-  };
 
   /// Functions for the ICRC1 token standard
   public shared query func icrc1_name() : async Text {
@@ -812,77 +792,7 @@ shared ({ caller = _owner }) actor class Token(
     return true;
   };
 
-  // Fee collection functions
-  public shared ({ caller }) func admin_collect_dead_gldt() : async Result.Result<Nat, Text> {
-    if (caller != owner) { return #err("Unauthorized") };
-    /*    
-    let dead_gldt = await calculate_dead_gldt();
-    if (dead_gldt == 0) { return #err("No dead GLDT to collect") };
-    
-    // Add dead GLDT to accumulated fees for distribution
-    accumulated_fees := accumulated_fees + dead_gldt;
-    total_dead_gldt_collected := total_dead_gldt_collected + dead_gldt;
-    
-    return #ok(dead_gldt);
-    */
-    return #ok(0);
-  };
-
   public shared ({ caller }) func admin_collect_fees() : async Result.Result<Nat, Text> {
-    if (caller != fee_collector and caller != authorized_fee_collector) { return #err("Unauthorized") };
-    
-    let fees = accumulated_fees;
-    if (fees == 0) { return #err("No fees to collect") };
-
-    if (fees <= gldt_transaction_fee * 2) { return #err("Not enough fees to collect") };
-    
-    let fees_minus_tx_fees = fees - (gldt_transaction_fee * 2);
-
-    // Calculate 50/50 split (accounting for odd amounts)
-    let half_fees = fees_minus_tx_fees / 2;
-    let second_half = fees_minus_tx_fees - half_fees; // This handles odd amounts correctly
-    
-    // Transfer first half to address 1
-    let transfer1_result = try {
-      await BOBLedger.icrc1_transfer({
-        to = {
-          owner = Principal.fromText("okpx5-c7nln-u3qii-ub55e-374ug-kjede-segkn-jgbv5-dkbfr-m55ma-yqe");
-          subaccount = null;
-        };
-        fee = null;
-        from_subaccount = null;
-        memo = ?Blob.toArray("\46\65\65\20\43\6f\6c\6c\65\63\74\69\6f\6e" : Blob); // "Fee Collection"
-        created_at_time = ?time64();
-        amount = half_fees;
-      });
-    } catch (e) {
-      return #err("Failed to transfer first half of fees: " # Error.message(e));
-    };
-    
-    // Transfer second half to address 2
-    let transfer2_result = try {
-      await BOBLedger.icrc1_transfer({
-        to = {
-          owner = Principal.fromText("ok64y-uiaaa-aaaag-qdcbq-cai");
-          subaccount = null;
-        };
-        fee = null;
-        from_subaccount = null;
-        memo = ?Blob.toArray("\46\65\65\20\43\6f\6c\6c\65\63\74\69\6f\6e" : Blob); // "Fee Collection"
-        created_at_time = ?time64();
-        amount = second_half;
-      });
-    } catch (e) {
-      return #err("Failed to transfer second half of fees: " # Error.message(e));
-    };
-    
-    // Reset accumulated fees
-    accumulated_fees := 0;
-    
-    return #ok(fees_minus_tx_fees);
-  };
-
-  public shared ({ caller }) func admin_collect_sgldt_fees() : async Result.Result<Nat, Text> {
     if (caller != fee_collector and caller != authorized_fee_collector) { return #err("Unauthorized") };
     let this_pid = Principal.fromActor(this);
     let fees = icrc1().balance_of({owner = this_pid; subaccount = null});
@@ -958,23 +868,17 @@ shared ({ caller = _owner }) actor class Token(
     principal == fee_collector or principal == authorized_fee_collector;
   };
 
-  public shared func get_dead_gldt_amount() : async Nat {
-    await calculate_dead_gldt();
-  };
-
   public query func get_fee_stats() : async {
     accumulated_fees : Nat;
     total_deposit_fees : Nat;
     total_withdraw_fees : Nat;
     total_ledger_fees : Nat;
-    total_dead_gldt_collected : Nat;
   } {
     {
       accumulated_fees = accumulated_fees;
       total_deposit_fees = total_deposit_fees;
       total_withdraw_fees = total_withdraw_fees;
       total_ledger_fees = total_ledger_fees;
-      total_dead_gldt_collected = total_dead_gldt_collected;
     };
   };
 
