@@ -182,6 +182,11 @@ shared ({ caller = _owner }) actor class Token(
   stable var total_ledger_fees : Nat = 0;
   stable var total_dead_gldt_collected : Nat = 0;
 
+  stable var gldt_transaction_fee : Nat = 10_000_000;
+  stable var gldt_conversion_fee : Nat = 20_000_000;
+
+  stable var sgldt_transaction_fee : Nat = 1000; // todo find in metadata
+
   let #v0_1_0(#data(icrc1_state_current)) = icrc1_migration_state;
 
   private var _icrc1 : ?ICRC1.ICRC1 = null;
@@ -507,8 +512,7 @@ shared ({ caller = _owner }) actor class Token(
     };
 
     // Track the GLDT ledger fee (0.1 GLDT) that was deducted during transfer
-    let gldt_ledger_fee = 10_000_000; // 0.1 GLDT
-    total_ledger_fees := total_ledger_fees + gldt_ledger_fee;
+    total_ledger_fees := total_ledger_fees + gldt_transaction_fee;
 
     let mintingAmount = amount;
 
@@ -554,9 +558,7 @@ shared ({ caller = _owner }) actor class Token(
   public shared ({ caller }) func withdraw(subaccount : ?[Nat8], amount : Nat) : async Result.Result<(Nat, Nat), Text> {
     log.add(debug_show (Time.now()) # "trying withdraw " # debug_show (subaccount));
 
-    let gldt_ledger_fee : Nat = 10_000_000;
-    let gldt_conversion_fee : Nat = 2 * gldt_ledger_fee;
-    let gldt_total_fee = gldt_ledger_fee + gldt_conversion_fee;
+    let gldt_total_fee = gldt_transaction_fee + gldt_conversion_fee;
 
     if (amount <= gldt_total_fee) {
       // Minimum amount to ensure user gets at least 0.1 GLDT after fees (0.1 GLDT canister fee)
@@ -596,9 +598,29 @@ shared ({ caller = _owner }) actor class Token(
 
     let block = switch (transferResult) {
       case (#Ok(block)) {
+        // Mint the conversion fee.
+        if (gldt_conversion_fee > 0) {
+          switch (icrc1().get_state().fee_collector) {
+            case (null) {
+              // count gldt retained as fees that admin may collect (gldt fee mode) 
+              accumulated_fees := accumulated_fees + gldt_conversion_fee;
+            };
+            case (?fee_collector) {
+              let mintFeeResult = await* icrc1().mint(
+                icrc1().get_state().minting_account.owner,
+                {
+                  to = fee_collector;
+                  amount = gldt_conversion_fee; // Remint the same amount that was retained as conversion fee
+                  memo = ?("\d8\d9\b4\5f\41\5d\5a\c3\be\e5\21\2c\10\f4\bb\6d\07\52\7d\01\17\7e\58\e0\13\03\39\90\00\c5\a8\94" : Blob); //sGLDT Withdraw
+                  created_at_time = ?time64(); // The time the burn operation was created.
+                },
+              );
+            };
+          };
+        };
+
         // Track the canister fee
-        total_withdraw_fees := total_withdraw_fees + gldt_ledger_fee;
-        accumulated_fees := accumulated_fees + gldt_conversion_fee;
+        total_withdraw_fees := total_withdraw_fees + gldt_transaction_fee;
         block;
       };
       case (#Err(err)) {
@@ -778,9 +800,22 @@ shared ({ caller = _owner }) actor class Token(
     return true;
   };
 
+  public shared ({ caller }) func admin_update_gldt_transaction_fee(new_fee : Nat) : async Bool {
+    if (caller != owner) { D.trap("Unauthorized") };
+    gldt_transaction_fee := new_fee;
+    return true;
+  };
+
+  public shared ({ caller }) func admin_update_gldt_conversion_fee(new_fee : Nat) : async Bool {
+    if (caller != owner) { D.trap("Unauthorized") };
+    gldt_conversion_fee := new_fee;
+    return true;
+  };
+
+  // Fee collection functions
   public shared ({ caller }) func admin_collect_dead_gldt() : async Result.Result<Nat, Text> {
     if (caller != owner) { return #err("Unauthorized") };
-    
+    /*    
     let dead_gldt = await calculate_dead_gldt();
     if (dead_gldt == 0) { return #err("No dead GLDT to collect") };
     
@@ -789,6 +824,8 @@ shared ({ caller = _owner }) actor class Token(
     total_dead_gldt_collected := total_dead_gldt_collected + dead_gldt;
     
     return #ok(dead_gldt);
+    */
+    return #ok(0);
   };
 
   public shared ({ caller }) func admin_collect_fees() : async Result.Result<Nat, Text> {
@@ -796,10 +833,14 @@ shared ({ caller = _owner }) actor class Token(
     
     let fees = accumulated_fees;
     if (fees == 0) { return #err("No fees to collect") };
+
+    if (fees <= gldt_transaction_fee * 2) { return #err("Not enough fees to collect") };
     
+    let fees_minus_tx_fees = fees - (gldt_transaction_fee * 2);
+
     // Calculate 50/50 split (accounting for odd amounts)
-    let half_fees = fees / 2;
-    let second_half = fees - half_fees; // This handles odd amounts correctly
+    let half_fees = fees_minus_tx_fees / 2;
+    let second_half = fees_minus_tx_fees - half_fees; // This handles odd amounts correctly
     
     // Transfer first half to address 1
     let transfer1_result = try {
@@ -838,7 +879,67 @@ shared ({ caller = _owner }) actor class Token(
     // Reset accumulated fees
     accumulated_fees := 0;
     
+    return #ok(fees_minus_tx_fees);
+  };
+
+  public shared ({ caller }) func admin_collect_sgldt_fees() : async Result.Result<Nat, Text> {
+    if (caller != fee_collector and caller != authorized_fee_collector) { return #err("Unauthorized") };
+    let this_pid = Principal.fromActor(this);
+    let fees = icrc1().balance_of({owner = this_pid; subaccount = null});
+    
+    if (fees == 0) { return #err("No fees to collect") };
+
+    if (fees <= sgldt_transaction_fee * 2) { return #err("Not enough fees to collect") };
+    
+    let fees_minus_tx_fees = fees - (sgldt_transaction_fee * 2);
+    
+    // Calculate 50/50 split (accounting for odd amounts)
+    let half_fees = fees_minus_tx_fees / 2;
+    let second_half = fees_minus_tx_fees - half_fees; // This handles odd amounts correctly
+    
+    // Transfer first half to address 1
+    let transfer1_result = try {
+      await* icrc1().transfer_tokens(
+        this_pid,
+        {
+          to = {
+            owner = Principal.fromText("okpx5-c7nln-u3qii-ub55e-374ug-kjede-segkn-jgbv5-dkbfr-m55ma-yqe");
+            subaccount = null;
+          };
+          fee = null;
+          from_subaccount = null;
+          memo = ?("\46\65\65\20\43\6f\6c\6c\65\63\74\69\6f\6e" : Blob); // "Fee Collection"
+          created_at_time = ?time64();
+          amount = half_fees;
+        }, false, null);
+    } catch (e) {
+      return #err("Failed to transfer first half of fees: " # Error.message(e));
+    };
+    
+    // Transfer second half to address 2
+    let transfer2_result = try {
+      await* icrc1().transfer_tokens(
+        this_pid,
+        {
+          to = {
+            owner = Principal.fromText("ok64y-uiaaa-aaaag-qdcbq-cai");
+            subaccount = null;
+          };
+          fee = null;
+          from_subaccount = null;
+          memo = ?("\46\65\65\20\43\6f\6c\6c\65\63\74\69\6f\6e" : Blob); // "Fee Collection"
+          created_at_time = ?time64();
+          amount = second_half;
+        }, false, null);
+    } catch (e) {
+      return #err("Failed to transfer second half of fees: " # Error.message(e));
+    };
+    
     return #ok(fees);
+  };
+
+  public query func get_sgldt_balance() : async Nat {
+    icrc1().balance_of({owner = Principal.fromActor(this); subaccount = null});
   };
 
   public query func get_accumulated_fees() : async Nat {
@@ -883,9 +984,9 @@ shared ({ caller = _owner }) actor class Token(
     sgldt_transfer_fee : Nat;
   } {
     {
-      gldt_ledger_fee = 10_000_000; // 0.1 GLDT
-      canister_withdraw_fee = 10_000_000; // 0.1 GLDT
-      sgldt_transfer_fee = 1_000; // 0.001 sGLDT
+      gldt_ledger_fee = gldt_transaction_fee; // 0.1 GLDT
+      canister_withdraw_fee = gldt_conversion_fee; // 0.2 sGLDT
+      sgldt_transfer_fee = 1_000; // 0.00001 sGLDT
     };
   };
 
