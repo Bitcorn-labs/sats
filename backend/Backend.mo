@@ -1028,4 +1028,53 @@ shared ({ caller = _owner }) actor class Token(
     log.add(debug_show (Time.now()) # " ICRC-106 index canister removed");
     #ok(());
   };
+
+  // NEW ARCHIVE UPGRADE FUNCTIONS (Phase 4)
+  public shared({caller}) func upgrade_archives() : async Result.Result<(), Text> {
+    if (caller != owner) {
+      return #err("Unauthorized");
+    };
+    
+    if (upgradeComplete) {
+      return #err("Archive upgrade already completed");
+    };
+    
+    try {
+      log.add(debug_show (Time.now()) # " Starting archive upgrade...");
+      
+      // Get current archive stats
+      let current_stats = icrc3().stats();
+      log.add(debug_show (Time.now()) # " Current archive stats: " # debug_show(current_stats));
+      
+      // Perform archive upgrade using ICRC3
+      let upgrade_result = icrc3().upgrade_archives();
+      log.add(debug_show (Time.now()) # " Archive upgrade initiated");
+      
+      upgradeComplete := true;
+      log.add(debug_show (Time.now()) # " Archive upgrade completed successfully");
+      
+      #ok(());
+    } catch (error) {
+      upgradeError := "Archive upgrade failed: " # Error.message(error);
+      log.add(debug_show (Time.now()) # " " # upgradeError);
+      #err(upgradeError);
+    };
+  };
+
+  public query func get_upgrade_status() : async {upgradeComplete : Bool; upgradeError : Text} {
+    {
+      upgradeComplete = upgradeComplete;
+      upgradeError = upgradeError;
+    };
+  };
+
+  public shared({caller}) func reset_upgrade_status() : async Result.Result<(), Text> {
+    if (caller != owner) {
+      return #err("Unauthorized");
+    };
+    upgradeComplete := false;
+    upgradeError := "";
+    log.add(debug_show (Time.now()) # " Upgrade status reset");
+    #ok(());
+  };
 };
