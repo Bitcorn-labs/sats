@@ -1005,4 +1005,27 @@ shared ({ caller = _owner }) actor class Token(
 
   //uncomment the following line to register the transfer_listener
   //icrc1().register_transfer_from_listener("my_namespace", transfer_from_listener);
+
+  // NEW ICRC-106 INDEX CANISTER FUNCTIONS (Phase 3)
+  public shared({caller}) func icrc106_set_index_canister(index_canister : Principal) : async Result.Result<(), Text> {
+    if (caller != owner) {
+      return #err("Unauthorized");
+    };
+    icrc106IndexCanister := ?index_canister;
+    log.add(debug_show (Time.now()) # " ICRC-106 index canister set to: " # Principal.toText(index_canister));
+    #ok(());
+  };
+
+  public query func icrc106_get_index_canister() : async ?Principal {
+    icrc106IndexCanister;
+  };
+
+  public shared({caller}) func icrc106_remove_index_canister() : async Result.Result<(), Text> {
+    if (caller != owner) {
+      return #err("Unauthorized");
+    };
+    icrc106IndexCanister := null;
+    log.add(debug_show (Time.now()) # " ICRC-106 index canister removed");
+    #ok(());
+  };
 };
