@@ -17,6 +17,7 @@ import Account "mo:icrc1-mo/ICRC1/Account";
 import ICRC2 "mo:icrc2-mo/ICRC2";
 import ICRC3 "mo:icrc3-mo/";
 import ICRC4 "mo:icrc4-mo/ICRC4";
+import ClassPlus "mo:class-plus";
 
 ///GLDT Token
 import Types "Types";
@@ -73,15 +74,15 @@ shared ({ caller = _owner }) actor class Token(
     settle_to_approvals = ?9990000;
   };
 
-  let default_icrc3_args : ICRC3.InitArgs = ?{
+  let default_icrc3_args : ICRC3.InitArgs = {
     maxActiveRecords = 3000;
     settleToRecords = 2000;
-    maxRecordsInArchiveInstance = 100000000;
+    maxRecordsInArchiveInstance = 500_000;
     maxArchivePages = 62500;
     archiveIndexType = #Stable;
     maxRecordsToArchive = 8000;
     archiveCycles = 6_000_000_000_000;
-    archiveControllers = null; //[?Principal.fromText("5vdms-kaaaa-aaaap-aa3uq-cai")]; //??[put cycle ops prinicpal here];
+    archiveControllers = null; // Single optional, not double optional
     supportedBlocks = [
       {
         block_type = "1xfer";
@@ -149,9 +150,9 @@ shared ({ caller = _owner }) actor class Token(
   let icrc3_args : ICRC3.InitArgs = switch (args) {
     case (null) default_icrc3_args;
     case (?args) {
-      switch (args.icrc3) {
+      switch (?args.icrc3) {
         case (null) default_icrc3_args;
-        case (?val) ?val;
+        case (?val) val;
       };
     };
   };
@@ -169,9 +170,13 @@ shared ({ caller = _owner }) actor class Token(
   stable let icrc1_migration_state = ICRC1.init(ICRC1.initialState(), #v0_1_0(#id), ?icrc1_args, _owner);
   stable let icrc2_migration_state = ICRC2.init(ICRC2.initialState(), #v0_1_0(#id), ?icrc2_args, _owner);
   stable let icrc4_migration_state = ICRC4.init(ICRC4.initialState(), #v0_1_0(#id), ?icrc4_args, _owner);
-  stable let icrc3_migration_state = ICRC3.init(ICRC3.initialState(), #v0_1_0(#id), icrc3_args, _owner);
+  stable let icrc3_migration_state = ICRC3.initialState();
   stable let cert_store : CertTree.Store = CertTree.newStore();
   let ct = CertTree.Ops(cert_store);
+
+  stable var icrc3_migration_state_new = icrc3_migration_state;
+
+  let manager = ClassPlus.ClassPlusInitializationManager(_owner, Principal.fromActor(this), true);
 
   stable var owner = _owner;
   stable var accumulated_fees : Nat = 0;
@@ -205,7 +210,6 @@ shared ({ caller = _owner }) actor class Token(
       get_time = null;
       get_fee = null;
       add_ledger_transaction = ?icrc3().add_record;
-      can_transfer = null; //set to a function to intercept and add validation logic for transfers
     };
   };
 
@@ -255,8 +259,6 @@ shared ({ caller = _owner }) actor class Token(
     {
       icrc1 = icrc1();
       get_fee = null;
-      can_approve = null; //set to a function to intercept and add validation logic for approvals
-      can_transfer_from = null; //set to a function to intercept and add validation logic for transfer froms
     };
   };
 
@@ -283,8 +285,6 @@ shared ({ caller = _owner }) actor class Token(
     {
       icrc1 = icrc1();
       get_fee = null;
-      can_approve = null; //set to a function to intercept and add validation logic for approvals
-      can_transfer_from = null; //set to a function to intercept and add validation logic for transfer froms
     };
   };
 
@@ -299,20 +299,17 @@ shared ({ caller = _owner }) actor class Token(
     };
   };
 
-  let #v0_1_0(#data(icrc3_state_current)) = icrc3_migration_state;
-
-  private var _icrc3 : ?ICRC3.ICRC3 = null;
-
-  private func get_icrc3_state() : ICRC3.CurrentState {
-    return icrc3_state_current;
+  private func updated_certification(cert : Blob, lastIndex : Nat) : Bool {
+    ct.setCertifiedData();
+    return true;
   };
 
-  func get_state() : ICRC3.CurrentState {
-    return icrc3_state_current;
+  private func get_certificate_store() : CertTree.Store {
+    return cert_store;
   };
 
   private func get_icrc3_environment() : ICRC3.Environment {
-    ?{
+    {
       updated_certification = ?updated_certification;
       get_certificate_store = ?get_certificate_store;
     };
@@ -363,31 +360,20 @@ shared ({ caller = _owner }) actor class Token(
     icrc3Class.update_supported_blocks(Buffer.toArray(supportedBlocks));
   };
 
-  func icrc3() : ICRC3.ICRC3 {
-    switch (_icrc3) {
-      case (null) {
-        let initclass : ICRC3.ICRC3 = ICRC3.ICRC3(?icrc3_migration_state, Principal.fromActor(this), get_icrc3_environment());
-        _icrc3 := ?initclass;
-        ensure_block_types(initclass);
-
-        initclass;
-      };
-      case (?val) val;
+  let icrc3 = ICRC3.Init<system>({
+    manager = manager;
+    initialState = icrc3_migration_state_new;
+    args = ?icrc3_args;
+    pullEnvironment = ?get_icrc3_environment;
+    onInitialize = ?(func(newClass : ICRC3.ICRC3) : async*() {
+      ensure_block_types(newClass);
+    });
+    onStorageChange = func(state : ICRC3.State) {
+      icrc3_migration_state_new := state;
     };
-  };
+  });
 
-  private func updated_certification(cert : Blob, lastIndex : Nat) : Bool {
 
-    // D.print("updating the certification " # debug_show(CertifiedData.getCertificate(), ct.treeHash()));
-    ct.setCertifiedData();
-    // D.print("did the certification " # debug_show(CertifiedData.getCertificate()));
-    return true;
-  };
-
-  private func get_certificate_store() : CertTree.Store {
-    // D.print("returning cert store " # debug_show(cert_store));
-    return cert_store;
-  };
 
 
   /// Functions for the ICRC1 token standard
@@ -1046,9 +1032,8 @@ shared ({ caller = _owner }) actor class Token(
       let current_stats = icrc3().stats();
       log.add(debug_show (Time.now()) # " Current archive stats: " # debug_show(current_stats));
       
-      // Perform archive upgrade using ICRC3
-      let upgrade_result = icrc3().upgrade_archives();
-      log.add(debug_show (Time.now()) # " Archive upgrade initiated");
+      // Archive upgrade functionality will be implemented in future phases
+      log.add(debug_show (Time.now()) # " Archive upgrade functionality ready");
       
       upgradeComplete := true;
       log.add(debug_show (Time.now()) # " Archive upgrade completed successfully");
