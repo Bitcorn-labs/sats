@@ -187,6 +187,11 @@ shared ({ caller = _owner }) actor class Token(
 
   stable var sgldt_transaction_fee : Nat = 1000; // todo find in metadata
 
+  // NEW STABLE VARIABLES FOR ICRC UPGRADE (Phase 1)
+  stable var icrc106IndexCanister : ?Principal = null;
+  stable var upgradeError = "";
+  stable var upgradeComplete = false;
+
   let #v0_1_0(#data(icrc1_state_current)) = icrc1_migration_state;
 
   private var _icrc1 : ?ICRC1.ICRC1 = null;
