@@ -221,6 +221,21 @@ shared ({ caller = _owner }) actor class Token(
           name = "ICRC-10";
           url = "https://github.com/dfinity/ICRC/ICRCs/icrc-10/";
         });
+        
+        // NEW ICRC STANDARDS FOR UPGRADE (Phase 2)
+        ignore initclass.register_supported_standards({
+          name = "ICRC-103";
+          url = "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-103"
+        });
+        ignore initclass.register_supported_standards({
+          name = "ICRC-106";
+          url = "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-106"
+        });
+        ignore initclass.register_supported_standards({
+          name = "ICRC-130";
+          url = "https://github.com/dfinity/ICRC/blob/main/ICRCs/ICRC-130"
+        });
+        
         _icrc1 := ?initclass;
         initclass;
       };
