@@ -16,6 +16,7 @@ import ICRC1 "mo:icrc1-mo/ICRC1";
 import Account "mo:icrc1-mo/ICRC1/Account";
 import ICRC2 "mo:icrc2-mo/ICRC2";
 import ICRC3 "mo:icrc3-mo/";
+import ICRC3Legacy "mo:icrc3-mo/legacy";
 import ICRC4 "mo:icrc4-mo/ICRC4";
 import ClassPlus "mo:class-plus";
 
@@ -733,6 +734,16 @@ shared ({ caller = _owner }) actor class Token(
 
   public query func get_tip() : async ICRC3.Tip {
     return icrc3().get_tip();
+  };
+
+  public query func get_transactions(args: { start : Nat; length : Nat }) : async ICRC3Legacy.GetTransactionsResponse {
+    let results = icrc3().get_blocks_legacy(args);
+    return {
+      first_index = icrc3().get_state().firstIndex;
+      log_length = icrc3().get_state().lastIndex + 1;
+      transactions = results.transactions;
+      archived_transactions = results.archived_transactions;
+    };
   };
 
   public shared ({ caller }) func icrc4_transfer_batch(args : ICRC4.TransferBatchArgs) : async ICRC4.TransferBatchResults {
