@@ -31,6 +31,13 @@
       "type": "assets",
       "source": ["dist/"]
     },
+    "ntn-test": {
+      "type": "motoko",
+      "main": "ntn/ntntest.mo",
+      "declarations": {
+        "node_compatibility": true
+      }
+    },
     "internet_identity": {
       "type": "custom",
       "candid": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity.did",
