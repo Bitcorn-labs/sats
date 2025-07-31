@@ -7,6 +7,13 @@
         "node_compatibility": true
       }
     },
+    "backend-staging": {
+      "type": "motoko",
+      "main": "backend/Backend.mo",
+      "declarations": {
+        "node_compatibility": true
+      }
+    },
     "fakegldt": {
       "type": "motoko",
       "main": "backend/FakeGLDT.mo",
@@ -16,6 +23,11 @@
     },
     "frontend": {
       "dependencies": ["backend"],
+      "type": "assets",
+      "source": ["dist/"]
+    },
+    "frontend-staging": {
+      "dependencies": ["backend-staging"],
       "type": "assets",
       "source": ["dist/"]
     },

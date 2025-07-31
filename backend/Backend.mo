@@ -50,7 +50,7 @@ shared ({ caller = _owner }) actor class Token(
     decimals = 8;
     fee = ? #Fixed(1000);
     minting_account = ?{
-      owner = _owner;
+      owner = Principal.fromActor(this);
       subaccount = null;
     };
     max_supply = null;
@@ -126,7 +126,7 @@ shared ({ caller = _owner }) actor class Token(
               case (?val) ?val;
               case (null) {
                 ?{
-                  owner = _owner;
+                  owner = Principal.fromActor(this);
                   subaccount = null;
                 };
               };
@@ -507,7 +507,7 @@ shared ({ caller = _owner }) actor class Token(
     let mintingAmount = amount;
 
     let newtokens = await* icrc1().mint_tokens(
-      icrc1().get_state().minting_account.owner,
+      Principal.fromActor(this),
       {
         to = {
           owner = caller;
