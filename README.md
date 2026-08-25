@@ -18,6 +18,7 @@ low-friction transactions for automated processes.
 | | Canister ID |
 |---|---|
 | Backend / SATS ledger (production) | `4fu6t-haaaa-aaaap-quxda-cai` |
+| ckBTC ledger (external) | `mxzaz-hqaaa-aaaar-qaada-cai` |
 
 **The backend canister *is* the SATS ledger.** It embeds `icrc-fungible`, so one
 canister serves both the wrapper logic and the ICRC-1/2/3/4 token. There is no
