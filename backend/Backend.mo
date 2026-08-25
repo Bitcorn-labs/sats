@@ -846,6 +846,18 @@ shared ({ caller = _owner }) actor class Token(
     } catch (e) {
       return #err("Failed to transfer first half of fees: " # Error.message(e));
     };
+
+    // transfer_tokens signals failure by *returning* it (Star / TransferResult),
+    // not by throwing, so the catch above never sees it. Inspect both layers.
+    switch (transfer1_result) {
+      case (#trappable(#Err(err)) or #awaited(#Err(err))) {
+        return #err("Failed to transfer first half of fees: " # debug_show (err));
+      };
+      case (#err(#trappable(err)) or #err(#awaited(err))) {
+        return #err("Failed to transfer first half of fees: " # err);
+      };
+      case (_) {};
+    };
     
     // Transfer second half to address 2
     let transfer2_result = try {
@@ -864,6 +876,18 @@ shared ({ caller = _owner }) actor class Token(
         }, false, null);
     } catch (e) {
       return #err("Failed to transfer second half of fees: " # Error.message(e));
+    };
+
+    // transfer_tokens signals failure by *returning* it (Star / TransferResult),
+    // not by throwing, so the catch above never sees it. Inspect both layers.
+    switch (transfer2_result) {
+      case (#trappable(#Err(err)) or #awaited(#Err(err))) {
+        return #err("Failed to transfer second half of fees: " # debug_show (err));
+      };
+      case (#err(#trappable(err)) or #err(#awaited(err))) {
+        return #err("Failed to transfer second half of fees: " # err);
+      };
+      case (_) {};
     };
     
     return #ok(fees);
