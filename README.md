@@ -8,6 +8,11 @@ Moving ckBTC costs **10 satoshis** per transfer. Moving SATS costs
 **0.000001 SATS**. That is roughly ten million times cheaper, which is the point:
 low-friction transactions for automated processes.
 
+> **Building an agent?** See **[SKILLS.md](SKILLS.md)** — a guide written for
+> autonomous agents using SATS for Bitcoin-denominated micropayments: when
+> wrapping is worth it, the exact call sequences, the unit conversions, and the
+> failure modes to guard against.
+
 ## Canisters
 
 | | Canister ID |
