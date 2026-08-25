@@ -31,6 +31,8 @@ export default defineConfig({
     react(),
     environment('all', { prefix: 'CANISTER_' }),
     environment('all', { prefix: 'DFX_' }),
+    // Always defined so `process.env.DEPLOY_ENV` never survives into the bundle.
+    environment({ DEPLOY_ENV: 'production' }),
   ],
   test: {
     environment: 'jsdom',

@@ -26,15 +26,8 @@ import bigintToFloatString from './bigIntToFloatString';
 import PlugLoginHandler from './components/PlugLoginHandler';
 import InternetIdentityLoginHandler from './components/InternetIdentityLoginHandler';
 import TokenManagement from './components/TokenManagement';
+import { gldtCanisterID, sGLDTCanisterID } from './config';
 
-const gldtCanisterID =
-  process.env.DFX_NETWORK === 'local'
-    ? '6c7su-kiaaa-aaaar-qaira-cai'
-    : '6c7su-kiaaa-aaaar-qaira-cai';
-const sGLDTCanisterID =
-  process.env.DFX_NETWORK === 'local'
-    ? 'bkyz2-fmaaa-aaaaa-qaaaq-cai'
-    : 'i2s4q-syaaa-aaaan-qz4sq-cai';
 
 function App() {
   const [loading, setLoading] = useState(false);
@@ -72,10 +65,10 @@ function App() {
     // }); // Can't use plug actors as anonymous.
 
     // We will use the internet identity anonymous calls in the next update. ic0 will work for now.
-    const gldtIcActor = await ic('6c7su-kiaaa-aaaar-qaira-cai'); // hard coding this because it will work in local still.
+    const gldtIcActor = await ic(gldtCanisterID);
 
     const totalGLDTHeldResponse = await gldtIcActor.call('icrc1_balance_of', {
-      owner: Principal.fromText('i2s4q-syaaa-aaaan-qz4sq-cai'), // hard coding this because it won't work with local of sGLDTCanisterID
+      owner: Principal.fromText(sGLDTCanisterID),
       subaccount: [],
     });
 

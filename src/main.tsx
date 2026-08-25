@@ -3,7 +3,8 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.scss';
 import { ActorProvider, AgentProvider } from '@ic-reactor/react';
-import { idlFactory, canisterId } from './declarations/backend';
+import { idlFactory } from './declarations/backend';
+import { sGLDTCanisterID as canisterId } from './config';
 
 import { Principal } from '@dfinity/principal';
 
