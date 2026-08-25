@@ -61,7 +61,14 @@ shared ({ caller = _owner }) actor class Token(
     max_memo = ?32;
     advanced_settings = null;
     metadata = null;
-    fee_collector = null;
+    // Must be a NORMAL account, never this canister's own. The conversion fee in
+    // withdraw() is paid via icrc1().mint(), and minting to the minting account
+    // is rejected -- the result is discarded, so it fails silently and the fee
+    // is retained as unbacked surplus instead. Verified live on 2026-08-25.
+    fee_collector = ?{
+      owner = Principal.fromText("okpx5-c7nln-u3qii-ub55e-374ug-kjede-segkn-jgbv5-dkbfr-m55ma-yqe");
+      subaccount = null;
+    };
     transaction_window = null;
     permitted_drift = null;
     max_accounts = ?100000000;
@@ -631,6 +638,19 @@ shared ({ caller = _owner }) actor class Token(
                   created_at_time = ?time64(); // The time the burn operation was created.
                 },
               );
+
+              // Never discard this: minting to the minting account is rejected,
+              // so a collector pointed at this canister makes the fee vanish
+              // silently and the value sits in reserves unbacked.
+              switch (mintFeeResult) {
+                case (#trappable(#Err(err)) or #awaited(#Err(err))) {
+                  log.add(debug_show (Time.now()) # " conversion fee mint failed: " # debug_show (err));
+                };
+                case (#err(#trappable(err)) or #err(#awaited(err))) {
+                  log.add(debug_show (Time.now()) # " conversion fee mint failed: " # err);
+                };
+                case (_) {};
+              };
             };
           };
         };
