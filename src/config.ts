@@ -11,7 +11,9 @@
 const isLocal = process.env.DFX_NETWORK === 'local';
 const isStaging = process.env.DEPLOY_ENV === 'staging';
 
-export const gldtCanisterID = '6c7su-kiaaa-aaaar-qaira-cai';
+// ckBTC ledger. Name kept as gldtCanisterID for now so this diff stays
+// reviewable; renamed in the cosmetic pass.
+export const gldtCanisterID = 'mxzaz-hqaaa-aaaar-qaada-cai';
 
 export const sGLDTCanisterID = isLocal
   ? 'bkyz2-fmaaa-aaaaa-qaaaq-cai'

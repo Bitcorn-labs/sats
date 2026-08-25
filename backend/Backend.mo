@@ -25,6 +25,7 @@ import Types "Types";
 import Blob "mo:base/Blob";
 import Int "mo:base/Int";
 import ICPTypes "ICPTypes";
+import Convert "Convert";
 
 shared ({ caller = _owner }) actor class Token(
   args : ?{
@@ -38,18 +39,19 @@ shared ({ caller = _owner }) actor class Token(
   let Set = ICRC1.Set;
   let Map = ICRC1.Map;
 
-  let ICPLedger : ICPTypes.Service = actor ("ryjl3-tyaaa-aaaaa-aaaba-cai");
-  // let BOBLedger : ICPTypes.Service = actor ("7pail-xaaaa-aaaas-aabmq-cai");
-  let BOBLedger : ICPTypes.Service = actor ("6c7su-kiaaa-aaaar-qaira-cai"); // GLDT Ledger
+  let Ledger : ICPTypes.Service = actor ("mxzaz-hqaaa-aaaar-qaada-cai"); // ckBTC Ledger
+
+  // Conversion between raw ckBTC and raw SATS lives in Convert.mo so it can be
+  // unit-tested; see backend/tests/Convert.test.mo.
 
   type Account = ICRC1.Account;
 
   let default_icrc1_args : ICRC1.InitArgs = {
-    name = ?"sGLDT - GLDT Wrapper";
-    symbol = ?"sGLDT";
+    name = ?"SATS";
+    symbol = ?"SATS";
     logo = ?"data:image/png;base64,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";
     decimals = 8;
-    fee = ? #Fixed(1000);
+    fee = ? #Fixed(100);
     minting_account = ?{
       owner = Principal.fromActor(this);
       subaccount = null;
@@ -186,12 +188,12 @@ shared ({ caller = _owner }) actor class Token(
   stable var total_deposit_fees : Nat = 0;
   stable var total_withdraw_fees : Nat = 0;
   stable var total_ledger_fees : Nat = 0;
-  stable var total_dead_gldt_collected : Nat = 0;
 
-  stable var gldt_transaction_fee : Nat = 10_000_000;
-  stable var gldt_conversion_fee : Nat = 20_000_000;
+  // Both denominated in RAW ckBTC.
+  stable var ckbtc_transaction_fee : Nat = 10; // the ckBTC ledger's own fee
+  stable var ckbtc_conversion_fee : Nat = 5; // protocol revenue
 
-  stable var sgldt_transaction_fee : Nat = 1000; // todo find in metadata
+  stable var sats_transaction_fee : Nat = 100; // must match the icrc1 fee above
 
   // NEW STABLE VARIABLES FOR ICRC UPGRADE (Phase 1)
   stable var icrc106IndexCanister : ?Principal = null;
@@ -423,7 +425,24 @@ shared ({ caller = _owner }) actor class Token(
   };
 
   public shared ({ caller }) func icrc1_transfer(args : ICRC1.TransferArgs) : async ICRC1.TransferResult {
-    switch (await* icrc1().transfer_tokens(caller, args, false, null)) {
+    // Reject transfers to the minting account (this canister). Under ICRC-1 such
+    // a transfer is a burn: the tokens are destroyed and no ckBTC comes back.
+    // Callers must use withdraw() to unwrap. Without this guard the loss is
+    // silent and irreversible.
+    switch (await* icrc1().transfer_tokens(caller, args, false,
+      ?#Sync(
+        func<system>(
+          trx : ICRC1.Value,
+          trxtop : ?ICRC1.Value,
+          notification : ICRC1.TransactionRequestNotification,
+        ) : Result.Result<(ICRC1.Value, ?ICRC1.Value, ICRC1.TransactionRequestNotification), Text> {
+          if (notification.to.owner == Principal.fromActor(this)) {
+            return #err("Cannot transfer to the token canister - this would burn your tokens. Use withdraw() to unwrap.");
+          };
+          #ok((trx, trxtop, notification));
+        }
+      )
+    )) {
       case (#trappable(val)) val;
       case (#awaited(val)) val;
       case (#err(#trappable(err))) D.trap(err);
@@ -448,7 +467,7 @@ shared ({ caller = _owner }) actor class Token(
 
   private func refund(caller : Principal, subaccount : ?[Nat8], amount : Nat, e : Text) : async* Result.Result<(Nat, Nat), Text> {
     try {
-      let result = await BOBLedger.icrc1_transfer({
+      let result = await Ledger.icrc1_transfer({
         from_subaccount = null;
         fee = null;
         to = {
@@ -469,13 +488,14 @@ shared ({ caller = _owner }) actor class Token(
   public shared ({ caller }) func deposit(subaccount : ?[Nat8], amount : Nat) : async Result.Result<(Nat, Nat), Text> {
     log.add(debug_show (Time.now()) # "trying deposit " # debug_show (subaccount));
 
-    if (amount < 50_000_000) {
-      // Minimum amount to account for high GLDT fees (10,000,000)
+    if (amount < 10_000) {
+      // 0.0001 ckBTC. Wrapping costs the user 20 raw (approve + transfer_from),
+      // so this keeps the overhead near 0.2%.
       return #err("amount too low");
     };
 
     let result = try {
-      await BOBLedger.icrc2_transfer_from({
+      await Ledger.icrc2_transfer_from({
         to = {
           owner = Principal.fromActor(this);
           subaccount = null;
@@ -503,9 +523,10 @@ shared ({ caller = _owner }) actor class Token(
     };
 
     // Track the GLDT ledger fee (0.1 GLDT) that was deducted during transfer
-    total_ledger_fees := total_ledger_fees + gldt_transaction_fee;
+    total_ledger_fees := total_ledger_fees + ckbtc_transaction_fee;
 
-    let mintingAmount = amount;
+    // `amount` is raw ckBTC in; `mintingAmount` is raw SATS out.
+    let mintingAmount = Convert.toSats(amount);
 
     let newtokens = await* icrc1().mint_tokens(
       Principal.fromActor(this),
@@ -549,11 +570,15 @@ shared ({ caller = _owner }) actor class Token(
   public shared ({ caller }) func withdraw(subaccount : ?[Nat8], amount : Nat) : async Result.Result<(Nat, Nat), Text> {
     log.add(debug_show (Time.now()) # "trying withdraw " # debug_show (subaccount));
 
-    let gldt_total_fee = gldt_transaction_fee + gldt_conversion_fee;
+    let ckbtc_total_fee = ckbtc_transaction_fee + ckbtc_conversion_fee;
 
-    if (amount <= gldt_total_fee) {
-      // Minimum amount to ensure user gets at least 0.1 GLDT after fees (0.1 GLDT canister fee)
-      return #err("amount too low - must be at least 0.3 GLDT to account for fees");
+    // `amount` is raw SATS. Only whole satoshis can leave as ckBTC; the
+    // sub-satoshi remainder is never burned and stays with the caller.
+    let gross_ckbtc = Convert.toCkbtcFloor(amount);
+    let burn_amount = Convert.burnable(amount);
+
+    if (gross_ckbtc <= ckbtc_total_fee) {
+      return #err("amount too low - must exceed " # debug_show (ckbtc_total_fee) # " SATS to cover fees");
     };
 
     let burnResult = await* icrc1().burn(
@@ -563,7 +588,7 @@ shared ({ caller = _owner }) actor class Token(
           case (null) null;
           case (?val) ?Blob.fromArray(val);
         }; // The subaccount from which tokens are burned.
-        amount = amount; // Burn the full amount requested by user
+        amount = burn_amount; // whole satoshis only; the remainder stays with the caller
         memo = ?("\d8\d9\b4\5f\41\5d\5a\c3\be\e5\21\2c\10\f4\bb\6d\07\52\7d\01\17\7e\58\e0\13\03\39\90\00\c5\a8\94" : Blob); //sGLDT Withdraw
         created_at_time = ?time64(); // The time the burn operation was created.
       },
@@ -574,7 +599,7 @@ shared ({ caller = _owner }) actor class Token(
       case (#Err((err))) return #err(debug_show (err));
     };
 
-    let transferResult = await BOBLedger.icrc1_transfer({
+    let transferResult = await Ledger.icrc1_transfer({
         to = {
           owner = caller;
           subaccount = subaccount;
@@ -583,25 +608,25 @@ shared ({ caller = _owner }) actor class Token(
         from_subaccount = null;
         memo = ?Blob.toArray("\d8\d9\b4\5f\41\5d\5a\c3\be\e5\21\2c\10\f4\bb\6d\07\52\7d\01\17\7e\58\e0\13\03\39\90\00\c5\a8\94"); //sGLDT Withdraw
         created_at_time = ?time64();
-        amount = amount - gldt_total_fee; // keep this amount as part of the transfer fee to keep our GLDT from being drained.
+        amount = gross_ckbtc - ckbtc_total_fee; // raw ckBTC out
       },
     );
 
     let block = switch (transferResult) {
       case (#Ok(block)) {
         // Mint the conversion fee.
-        if (gldt_conversion_fee > 0) {
+        if (ckbtc_conversion_fee > 0) {
           switch (icrc1().get_state().fee_collector) {
             case (null) {
               // count gldt retained as fees that admin may collect (gldt fee mode) 
-              accumulated_fees := accumulated_fees + gldt_conversion_fee;
+              accumulated_fees := accumulated_fees + ckbtc_conversion_fee;
             };
             case (?fee_collector) {
               let mintFeeResult = await* icrc1().mint(
                 icrc1().get_state().minting_account.owner,
                 {
                   to = fee_collector;
-                  amount = gldt_conversion_fee; // Remint the same amount that was retained as conversion fee
+                  amount = Convert.toSats(ckbtc_conversion_fee); // retained in ckBTC, minted in SATS
                   memo = ?("\d8\d9\b4\5f\41\5d\5a\c3\be\e5\21\2c\10\f4\bb\6d\07\52\7d\01\17\7e\58\e0\13\03\39\90\00\c5\a8\94" : Blob); //sGLDT Withdraw
                   created_at_time = ?time64(); // The time the burn operation was created.
                 },
@@ -611,7 +636,7 @@ shared ({ caller = _owner }) actor class Token(
         };
 
         // Track the canister fee
-        total_withdraw_fees := total_withdraw_fees + gldt_transaction_fee;
+        total_withdraw_fees := total_withdraw_fees + ckbtc_transaction_fee;
         block;
       };
       case (#Err(err)) {
@@ -627,7 +652,7 @@ shared ({ caller = _owner }) actor class Token(
                 case (?val) ?Blob.fromArray(val);
               }; // The subaccount from which tokens are burned.
             };
-            amount = amount; // Remint the same amount that was burned
+            amount = burn_amount; // must match exactly what was burned
             memo = ?("\d8\d9\b4\5f\41\5d\5a\c3\be\e5\21\2c\10\f4\bb\6d\07\52\7d\01\17\7e\58\e0\13\03\39\90\00\c5\a8\94" : Blob); //sGLDT Withdraw
             created_at_time = ?time64(); // The time the burn operation was created.
           },
@@ -801,15 +826,15 @@ shared ({ caller = _owner }) actor class Token(
     return true;
   };
 
-  public shared ({ caller }) func admin_update_gldt_transaction_fee(new_fee : Nat) : async Bool {
+  public shared ({ caller }) func admin_update_ckbtc_transaction_fee(new_fee : Nat) : async Bool {
     if (caller != owner) { D.trap("Unauthorized") };
-    gldt_transaction_fee := new_fee;
+    ckbtc_transaction_fee := new_fee;
     return true;
   };
 
-  public shared ({ caller }) func admin_update_gldt_conversion_fee(new_fee : Nat) : async Bool {
+  public shared ({ caller }) func admin_update_ckbtc_conversion_fee(new_fee : Nat) : async Bool {
     if (caller != owner) { D.trap("Unauthorized") };
-    gldt_conversion_fee := new_fee;
+    ckbtc_conversion_fee := new_fee;
     return true;
   };
 
@@ -820,9 +845,9 @@ shared ({ caller = _owner }) actor class Token(
     
     if (fees == 0) { return #err("No fees to collect") };
 
-    if (fees <= sgldt_transaction_fee * 2) { return #err("Not enough fees to collect") };
+    if (fees <= sats_transaction_fee * 2) { return #err("Not enough fees to collect") };
     
-    let fees_minus_tx_fees = fees - (sgldt_transaction_fee * 2);
+    let fees_minus_tx_fees = fees - (sats_transaction_fee * 2);
     
     // Calculate 50/50 split (accounting for odd amounts)
     let half_fees = fees_minus_tx_fees / 2;
@@ -893,7 +918,7 @@ shared ({ caller = _owner }) actor class Token(
     return #ok(fees);
   };
 
-  public query func get_sgldt_balance() : async Nat {
+  public query func get_sats_balance() : async Nat {
     icrc1().balance_of({owner = Principal.fromActor(this); subaccount = null});
   };
 
@@ -928,13 +953,13 @@ shared ({ caller = _owner }) actor class Token(
   };
 
   public query func get_fee_breakdown() : async {
-    gldt_ledger_fee : Nat;
+    ckbtc_ledger_fee : Nat;
     canister_withdraw_fee : Nat;
     sgldt_transfer_fee : Nat;
   } {
     {
-      gldt_ledger_fee = gldt_transaction_fee; // 0.1 GLDT
-      canister_withdraw_fee = gldt_conversion_fee; // 0.2 sGLDT
+      ckbtc_ledger_fee = ckbtc_transaction_fee; // 0.1 GLDT
+      canister_withdraw_fee = ckbtc_conversion_fee; // 0.2 sGLDT
       sgldt_transfer_fee = 1_000; // 0.00001 sGLDT
     };
   };
