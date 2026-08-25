@@ -1,164 +1,240 @@
-# GLDT VAULT - Low Fee GLDT Wrapper
+# SATS — a low-fee ckBTC wrapper
 
-A token wrapper dapp that allows users to wrap GLDT tokens into sGLDT with significantly lower transaction fees while maintaining a 1:1 ratio.
+Wrap **ckBTC** into **SATS** and transact at a fraction of the cost. One raw ckBTC
+unit — one satoshi — becomes `1.00000000 SATS`, and SATS is divisible to a further
+8 decimals.
 
-## Overview
+Moving ckBTC costs **10 satoshis** per transfer. Moving SATS costs
+**0.000001 SATS**. That is roughly ten million times cheaper, which is the point:
+low-friction transactions for automated processes.
 
-This application provides a simple interface for users to:
-- **Wrap GLDT to sGLDT**: Deposit GLDT and receive sGLDT tokens
-- **Unwrap sGLDT to GLDT**: Burn sGLDT tokens and receive GLDT back
+## Canisters
 
-The wrapper maintains a 1:1 ratio between GLDT and sGLDT, but sGLDT has much lower transaction fees, making it ideal for frequent trading and transfers.
+| | Canister ID |
+|---|---|
+| Backend / SATS ledger (production) | `4fu6t-haaaa-aaaap-quxda-cai` |
+| Backend / SATS ledger (staging) | `5r3gp-3iaaa-aaaap-qqaeq-cai` |
+| Frontend (staging) | `coqqu-zaaaa-aaaai-q32ma-cai` |
+| ckBTC ledger (external) | `mxzaz-hqaaa-aaaar-qaada-cai` |
 
-### Token Details:
-- **GLDT Token:** `6c7su-kiaaa-aaaar-qaira-cai` - Fee: 10,000,000 (0.1 GLDT)
-- **sGLDT Token:** Minted by backend canister - Fee: 1,000 (0.000001 sGLDT)
-- **GLDT Decimals:** 8
-- **sGLDT Decimals:** 6
-- **Ratio:** 1:1 (1 GLDT = 1 sGLDT)
+**The backend canister *is* the SATS ledger.** It embeds `icrc-fungible`, so one
+canister serves both the wrapper logic and the ICRC-1/2/3/4 token. There is no
+separate ledger canister.
 
-## Features
+> ⚠️ Because the ledger's minting account is the canister itself, an ICRC-1
+> transfer **to** the canister ID is a burn. The canister rejects these with a
+> `can_transfer` guard, but never treat the canister ID as a recipient address.
+> To get ckBTC back, call `withdraw`.
 
-- **Low Fee Wrapping**: Convert GLDT to sGLDT for reduced transaction costs
-- **Secure Unwrapping**: Burn sGLDT to retrieve original GLDT
-- **Real-time Balances**: View your GLDT and sGLDT balances
-- **Transaction History**: Track all wrap/unwrap operations
-- **Multiple Authentication**: Support for Plug wallet and Internet Identity
-- **Beautiful UI**: Gold-themed interface with modern design
+## Token
 
-## Architecture
+| | |
+|---|---|
+| Name | `Sat - 1 Satoshi` |
+| Symbol | `SATS` |
+| Decimals | 8 |
+| Transfer fee | 100 raw (`0.000001 SATS`) |
+| Standards | ICRC-1, ICRC-2, ICRC-3, ICRC-4, ICRC-10, ICRC-103, ICRC-106 |
 
-The application consists of three main components:
+## The conversion
 
-1. **Backend Canister** (`i2s4q-syaaa-aaaan-qz4sq-cai`): Handles sGLDT token minting/burning and GLDT transfers
-2. **Frontend Canister**: Serves the React web application
-3. **GLDT Ledger**: The original GLDT token contract
-
-## Deployment
-
-### Prerequisites
-
-- [Node.js](https://nodejs.org/en/) `>= 16`
-- [`dfx`](https://internetcomputer.org/docs/current/developer-docs/build/install-upgrade-remove) `>= 0.14`
-- ICP balance for canister deployment
-
-### 1. Clone and Setup
-
-```bash
-git clone <repository-url>
-cd Bobsplitter
-npm install
+```
+raw_SATS = raw_ckBTC × 100_000_000
 ```
 
-### 2. Configure Canister IDs
+Both tokens use 8 decimals, but one raw ckBTC unit is a satoshi and is worth a
+whole SATS. The arithmetic lives in [`backend/Convert.mo`](backend/Convert.mo)
+and is covered by [`backend/tests/Convert.test.mo`](backend/tests/Convert.test.mo).
 
-The application is pre-configured with the following canister IDs:
+| ckBTC in | SATS out |
+|---|---|
+| `1_000` (minimum) | `100_000_000_000` |
+| `10_000` | `1_000_000_000_000` |
+| `100_000_000` (1 ckBTC) | `10_000_000_000_000_000` |
 
-```typescript
-// In src/App.tsx
-const gldtCanisterID = '6c7su-kiaaa-aaaar-qaira-cai';  // GLDT Ledger
-const sGLDTCanisterID = 'i2s4q-syaaa-aaaan-qz4sq-cai'; // Backend (sGLDT)
-```
+## Fees
 
-### 3. Deploy to Internet Computer
+| Action | Cost |
+|---|---|
+| Wrap | 20 raw ckBTC — two ckBTC ledger fees (approve + `transfer_from`). No protocol fee. |
+| Unwrap | 15 raw ckBTC — 10 ckBTC network fee + 5 protocol fee |
+| SATS transfer | 100 raw SATS |
+
+Minimum deposit is **1,000 raw ckBTC** (`0.00001`). Minimum withdrawal is
+**16 SATS** (`1_600_000_000` raw), since the release must clear the 15-raw fee.
+
+---
+
+# Wrapping: ckBTC → SATS
+
+Two calls. Approve the backend to pull your ckBTC, then deposit.
+
+`deposit(subaccount: opt vec nat8, amount: nat) -> (Result)` — `amount` is in
+**raw ckBTC**.
+
+### dfx
 
 ```bash
-# Set environment variable to suppress identity warning
 export DFX_WARNING=-mainnet_plaintext_identity
+BACKEND=4fu6t-haaaa-aaaap-quxda-cai
+CKBTC=mxzaz-hqaaa-aaaar-qaada-cai
 
-# Deploy backend canister
-dfx deploy backend --network ic
+# 1. approve — must cover the deposit PLUS the 10-raw ckBTC ledger fee
+dfx canister --network ic call $CKBTC icrc2_approve "(record {
+  spender = record { owner = principal \"$BACKEND\"; subaccount = null };
+  amount = 10_010 : nat;
+  fee = null; memo = null; from_subaccount = null;
+  created_at_time = null; expected_allowance = null; expires_at = null;
+})"
 
-# Deploy frontend canister  
-dfx deploy frontend --network ic
+# 2. deposit — null subaccount = default
+dfx canister --network ic call $BACKEND deposit '(null, 10_000 : nat)'
 ```
 
-### 4. Update Compute Allocation (Optional)
-
-For better performance, you may want to update the compute allocation:
+### icp
 
 ```bash
-dfx canister --network ic update-settings backend --compute-allocation 1
+BACKEND=4fu6t-haaaa-aaaap-quxda-cai
+CKBTC=mxzaz-hqaaa-aaaar-qaada-cai
+
+icp canister call $CKBTC icrc2_approve "(record {
+  spender = record { owner = principal \"$BACKEND\"; subaccount = null };
+  amount = 10_010 : nat;
+  fee = null; memo = null; from_subaccount = null;
+  created_at_time = null; expected_allowance = null; expires_at = null;
+})" --network ic
+
+icp canister call $BACKEND deposit '(null, 10_000 : nat)' --network ic
 ```
 
-## Usage
+Returns `variant { ok = record { … } }` carrying the ckBTC block index and the
+SATS mint index, or `variant { err = text }`.
 
-### Connecting to the App
+10,000 raw ckBTC mints `1_000_000_000_000` raw SATS — 10,000.00000000 SATS.
 
-1. **Plug Wallet**: Click "Connect Plug" and approve the connection
-2. **Internet Identity**: Click "Connect Internet Identity" and authenticate
+---
 
-### Wrapping GLDT to sGLDT
+# Unwrapping: SATS → ckBTC
 
-1. Ensure you have sufficient GLDT balance
-2. Enter the amount of GLDT you want to wrap
-3. Click "Wrap GLDT"
-4. Approve the transaction in your wallet
-5. Wait for confirmation - you'll receive sGLDT tokens
+One call. No approval needed — `withdraw` burns from the caller's balance directly.
 
-### Unwrapping sGLDT to GLDT
+`withdraw(subaccount: opt vec nat8, amount: nat) -> (Result)` — `amount` is in
+**raw SATS**.
 
-1. Ensure you have sufficient sGLDT balance
-2. Enter the amount of sGLDT you want to unwrap
-3. Click "Unwrap to GLDT"
-4. Approve the transaction in your wallet
-5. Wait for confirmation - you'll receive GLDT tokens
-
-## Development
-
-### Local Development
+### dfx
 
 ```bash
-# Start local replica
-dfx start --clean --background
-
-# Deploy locally
-dfx deploy
-
-# Start development server
-npm start
+dfx canister --network ic call $BACKEND withdraw '(null, 1_600_000_000 : nat)'
 ```
 
-### Project Structure
+### icp
 
-```
-src/
-├── components/
-│   ├── GLDTMintingField.tsx      # GLDT to sGLDT wrapping
-│   ├── SGLDTWithdrawField.tsx    # sGLDT to GLDT unwrapping
-│   ├── PlugLoginHandler.tsx      # Plug wallet integration
-│   ├── InternetIdentityLoginHandler.tsx  # II authentication
-│   └── TokenManagement.tsx       # Balance and allowance management
-├── assets/
-│   ├── goldbackground.jpg        # Background image
-│   ├── gold.png                  # Gold logo
-│   └── ...                       # Other assets
-├── App.tsx                       # Main application component
-└── index.scss                    # Global styles
+```bash
+icp canister call $BACKEND withdraw '(null, 1_600_000_000 : nat)' --network ic
 ```
 
-## Technology Stack
+That example burns 16.00000000 SATS and releases **1 raw ckBTC** (16 − 15 fee).
 
-- **Frontend**: React + TypeScript + Vite
-- **Styling**: Sass + Material-UI
-- **Backend**: Motoko
-- **Authentication**: Plug Wallet + Internet Identity
-- **Deployment**: Internet Computer (ICP)
+To size a withdrawal:
 
-## Security
+```
+withdraw_amount = (desired_raw_ckBTC + 15) × 100_000_000
+```
 
-- All transactions require user approval through their wallet
-- Token transfers use ICRC-2 standard for secure approvals
-- Backend canister handles all token minting/burning operations
-- No private keys are stored in the application
+| Want out | `withdraw` amount |
+|---|---|
+| 1 sat (minimum) | `1_600_000_000` |
+| 100 sats | `11_500_000_000` |
+| 1,000 sats | `101_500_000_000` |
 
-## Support
+**Withdrawals floor to whole satoshis.** A request that is not a multiple of
+`100_000_000` burns only the whole-satoshi portion; the remainder stays in your
+balance. Nothing is lost to rounding.
 
-For issues or questions:
-- Check the transaction status messages for detailed error information
-- Ensure you have sufficient token balances and allowances
-- Verify your wallet connection is active
+---
 
-## License
+# Checking balances
 
-This project is open source and available under the GNU License.
+### dfx
+
+```bash
+P=<your-principal>
+dfx canister --network ic call $CKBTC icrc1_balance_of \
+  "(record { owner = principal \"$P\"; subaccount = null })" --query
+dfx canister --network ic call $BACKEND icrc1_balance_of \
+  "(record { owner = principal \"$P\"; subaccount = null })" --query
+```
+
+### icp
+
+```bash
+icp canister call $CKBTC icrc1_balance_of \
+  "(record { owner = principal \"$P\"; subaccount = null })" --query --network ic
+icp canister call $BACKEND icrc1_balance_of \
+  "(record { owner = principal \"$P\"; subaccount = null })" --query --network ic
+```
+
+> **Units differ between the two calls.** `deposit` takes raw ckBTC; `withdraw`
+> takes raw SATS. They are 1e8 apart. This is the easiest thing to get wrong.
+
+---
+
+# Development
+
+### Toolchain
+
+**Only dfx 0.28.0 builds this project.** Pin it:
+
+```bash
+export DFX_VERSION=0.28.0
+```
+
+dfx 0.31.0 rejects `icrc3-mo@0.3.5` with `M0219` (implicit transient);
+dfx ≤ 0.27.0 fails on `sha2@0.1.4`.
+
+### Build and test
+
+```bash
+npm install                                  # also runs `mops install`
+DFX_VERSION=0.28.0 dfx build --network ic backend
+npx mo-test                                  # conversion arithmetic
+```
+
+### Deploying the frontend
+
+The frontend targets production by default. Build staging explicitly:
+
+```bash
+npm run build:staging
+```
+
+> ⚠️ `dfx deploy` **re-runs `npm run build` itself** and overwrites `dist/`.
+> Building the staging bundle first is not enough — export the variable for the
+> whole deploy command, or dfx will silently ship a production bundle and report
+> success:
+>
+> ```bash
+> export DEPLOY_ENV=staging
+> DFX_VERSION=0.28.0 dfx deploy frontend-staging --network ic
+> ```
+>
+> The asset-canister wasm hash is identical for both builds, so module hashes
+> cannot detect a wrong-environment deploy. Verify by fetching the live bundle:
+>
+> ```bash
+> curl -s https://<canister>.icp0.io/ | grep -oE '/assets/index-[a-z0-9]+\.js'
+> ```
+>
+> and confirming it contains the expected backend canister ID.
+
+### Metadata changes need a fresh install
+
+`stable let icrc1_migration_state` only runs its initialiser on first install, so
+editing `default_icrc1_args` and *upgrading* changes nothing. Either reinstall
+(which wipes all balances) or use `admin_update_icrc1` at runtime — `#Name`,
+`#Symbol`, `#Logo` and `#FeeCollector` are all updatable that way. After a runtime
+change, fold the value back into the source or the next install will revert it.
+
+## Licence
+
+GNU — see [LICENSE](LICENSE).

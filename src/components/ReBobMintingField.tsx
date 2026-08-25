@@ -3,33 +3,33 @@ import { TextField, ThemeProvider, createTheme } from '@mui/material';
 import theme from '../theme';
 import bigintToFloatString from '../bigIntToFloatString';
 import { Principal } from '@dfinity/principal';
-import { _SERVICE as gldtService } from '../declarations/nns-ledger/index.d'; // why is this icpService?
-import { _SERVICE as sGLDTService } from '../declarations/service_hack/service';
+import { _SERVICE as ckbtcService } from '../declarations/nns-ledger/index.d'; // why is this icpService?
+import { _SERVICE as SATSService } from '../declarations/service_hack/service';
 import ShowTransactionStatus from './ShowTransactionStatus';
 
 interface ReBobMintingFieldProps {
   loading: boolean;
   setLoading: (value: boolean) => void;
-  gldtLedgerBalance: bigint;
-  gldtFee: bigint;
+  ckbtcLedgerBalance: bigint;
+  ckbtcFee: bigint;
   isConnected: boolean;
-  sGLDTCanisterID: string;
+  SATSCanisterID: string;
   cleanUp: () => void;
-  gldtLedgerActor: gldtService | null;
-  sGLDTActor: sGLDTService | null;
+  ckbtcLedgerActor: ckbtcService | null;
+  SATSActor: SATSService | null;
   minimumTransactionAmount: bigint;
 }
 
 const ReBobMintingField: React.FC<ReBobMintingFieldProps> = ({
   loading,
   setLoading,
-  gldtLedgerBalance,
-  gldtFee,
+  ckbtcLedgerBalance,
+  ckbtcFee,
   isConnected,
-  sGLDTCanisterID,
+  SATSCanisterID,
   cleanUp,
-  gldtLedgerActor,
-  sGLDTActor,
+  ckbtcLedgerActor,
+  SATSActor,
   minimumTransactionAmount,
 }) => {
   const [bobFieldValue, setBobFieldValue] = useState<string>('');
@@ -56,31 +56,31 @@ const ReBobMintingField: React.FC<ReBobMintingFieldProps> = ({
     }
 
     if (
-      bobFieldNatValue + gldtFee * 2n > gldtLedgerBalance ||
-      gldtLedgerBalance < minimumTransactionAmount
+      bobFieldNatValue + ckbtcFee * 2n > ckbtcLedgerBalance ||
+      ckbtcLedgerBalance < minimumTransactionAmount
     ) {
-      addStatus('You do not have enough GLDT.');
+      addStatus('You do not have enough ckBTC.');
       return;
     }
 
-    if (!gldtLedgerActor || !sGLDTActor) {
+    if (!ckbtcLedgerActor || !SATSActor) {
       addStatus('Actors not loaded!');
       return;
     }
 
     setLoading(true);
 
-    const approvalResult = await approveGldt(bobFieldNatValue + gldtFee);
+    const approvalResult = await approveCkBtc(bobFieldNatValue + ckbtcFee);
 
     if (!approvalResult) {
       cleanUp();
       return;
     }
 
-    const result = await gldtDeposit(bobFieldNatValue);
+    const result = await ckbtcDeposit(bobFieldNatValue);
 
     if (!result) {
-      addStatus('GLDT was approved, but was not transferred.');
+      addStatus('ckBTC was approved, but was not transferred.');
     }
 
     cleanUp();
@@ -88,23 +88,23 @@ const ReBobMintingField: React.FC<ReBobMintingFieldProps> = ({
     setBobFieldValue('');
   };
 
-  const approveGldt = async (amountInE8s: bigint) => {
-    if (!gldtLedgerActor) return false;
+  const approveCkBtc = async (amountInE8s: bigint) => {
+    if (!ckbtcLedgerActor) return false;
 
     addStatus(
-      `Requesting to approve ${bigintToFloatString(amountInE8s, 8)} GLDT.`
+      `Requesting to approve ${bigintToFloatString(amountInE8s, 8)} ckBTC.`
     );
 
     try {
-      const approvalResult = await gldtLedgerActor.icrc2_approve({
-        amount: amountInE8s, // Approve amount and the fee to send gldt back during icrc2_transfer_from() in deposit() function
+      const approvalResult = await ckbtcLedgerActor.icrc2_approve({
+        amount: amountInE8s, // Approve amount and the fee to send ckbtc back during icrc2_transfer_from() in deposit() function
         // Adjust with your canister ID and parameters
         spender: {
-          owner: await Principal.fromText(sGLDTCanisterID),
+          owner: await Principal.fromText(SATSCanisterID),
           subaccount: [],
         },
         memo: [],
-        fee: [gldtFee],
+        fee: [ckbtcFee],
         created_at_time: [BigInt(Date.now()) * 1000000n],
         expires_at: [],
         expected_allowance: [],
@@ -113,58 +113,58 @@ const ReBobMintingField: React.FC<ReBobMintingFieldProps> = ({
 
       if ('Ok' in approvalResult) {
         addStatus(
-          `${bigintToFloatString(amountInE8s, 8)} GLDT approved for transfer!`
+          `${bigintToFloatString(amountInE8s, 8)} ckBTC approved for transfer!`
         );
         return true;
       } else {
-        addStatus('GLDT was not approved for transfer.');
+        addStatus('ckBTC was not approved for transfer.');
         return false;
       }
     } catch (error) {
-      console.error('Error occurred when approving GLDT:', error);
+      console.error('Error occurred when approving ckBTC:', error);
       addStatus(
-        "Error occurred when approving GLDT (Check your web browser's console)"
+        "Error occurred when approving ckBTC (Check your web browser's console)"
       );
       return false;
     }
   };
 
-  const gldtDeposit = async (amountInE8s: bigint) => {
-    if (!sGLDTActor) {
+  const ckbtcDeposit = async (amountInE8s: bigint) => {
+    if (!SATSActor) {
       return false;
     }
 
     try {
       addStatus(
-        `Depositing ${bigintToFloatString(amountInE8s, 8)} GLDT to mint sGLDT.`
+        `Depositing ${bigintToFloatString(amountInE8s, 8)} ckBTC to mint SATS.`
       );
-      const result = await sGLDTActor.deposit([], amountInE8s);
+      const result = await SATSActor.deposit([], amountInE8s);
 
       if ('ok' in result) {
         addStatus(
           `Swapped ${bigintToFloatString(
             amountInE8s,
             8
-          )} GLDT for ${bigintToFloatString(
+          )} ckBTC for ${bigintToFloatString(
             amountInE8s,
             6
-          )} sGLDT! GLDT transferred on block ${result.ok[0].toString()}. sGLDT minted on block ${result.ok[1].toString()}.`
+          )} SATS! ckBTC transferred on block ${result.ok[0].toString()}. SATS minted on block ${result.ok[1].toString()}.`
         );
         return true;
       } else {
         addStatus(
-          "Failed to deposit GLDT to mint sGLDT (Check your web browser's console)"
+          "Failed to deposit ckBTC to mint SATS (Check your web browser's console)"
         );
         console.error(
-          'Failed to deposit GLDT to mint sGLDT: ',
+          'Failed to deposit ckBTC to mint SATS: ',
           result.err.toString()
         );
         return false;
       }
     } catch (error) {
-      console.error('Failed when depositing GLDT to mint sGLDT:', error);
+      console.error('Failed when depositing ckBTC to mint SATS:', error);
       addStatus(
-        "Failed when depositing GLDT to mint sGLDT (Check your web browser's console)"
+        "Failed when depositing ckBTC to mint SATS (Check your web browser's console)"
       );
       return false;
     }
@@ -175,29 +175,29 @@ const ReBobMintingField: React.FC<ReBobMintingFieldProps> = ({
   };
 
   useEffect(() => {
-    const gldtNatValue =
+    const ckbtcNatValue =
       bobFieldValue && bobFieldValue !== '.'
         ? BigInt((parseFloat(bobFieldValue) * 1_0000_0000).toFixed(0)) // Convert to Nat
         : 0n;
 
-    // console.log(gldtNatValue);
-    setButtonDisabled(gldtNatValue + gldtFee * 2n > gldtLedgerBalance);
-    setTextFieldValueTooLow(gldtNatValue < minimumTransactionAmount);
+    // console.log(ckbtcNatValue);
+    setButtonDisabled(ckbtcNatValue + ckbtcFee * 2n > ckbtcLedgerBalance);
+    setTextFieldValueTooLow(ckbtcNatValue < minimumTransactionAmount);
     setTextFieldErrored(
-      (gldtLedgerBalance < minimumTransactionAmount && gldtNatValue > 0) ||
-        (gldtLedgerBalance >= minimumTransactionAmount &&
-          gldtNatValue + gldtFee * 2n > gldtLedgerBalance)
+      (ckbtcLedgerBalance < minimumTransactionAmount && ckbtcNatValue > 0) ||
+        (ckbtcLedgerBalance >= minimumTransactionAmount &&
+          ckbtcNatValue + ckbtcFee * 2n > ckbtcLedgerBalance)
     );
-    setBobFieldNatValue(gldtNatValue);
-  }, [bobFieldValue, gldtLedgerBalance]);
+    setBobFieldNatValue(ckbtcNatValue);
+  }, [bobFieldValue, ckbtcLedgerBalance]);
 
   return (
     <ThemeProvider theme={theme}>
-      {gldtLedgerBalance <= minimumTransactionAmount ? (
+      {ckbtcLedgerBalance <= minimumTransactionAmount ? (
         <>
           <div>
             You need at least {bigintToFloatString(minimumTransactionAmount, 8)}{' '}
-            $GLDT to wrap to sGLDT
+            $ckBTC to wrap to SATS
           </div>
         </>
       ) : (
@@ -212,13 +212,13 @@ const ReBobMintingField: React.FC<ReBobMintingFieldProps> = ({
       >
         <div>
           <TextField
-            label="GLDT"
+            label="ckBTC"
             variant="filled"
             value={bobFieldValue}
             onChange={handleBobFieldChange}
             helperText={
               buttonDisabled
-                ? "You don't have enough GLDT!"
+                ? "You don't have enough ckBTC!"
                 : textFieldValueTooLow
                 ? `You must input at least ${bigintToFloatString(
                     minimumTransactionAmount,
@@ -248,7 +248,7 @@ const ReBobMintingField: React.FC<ReBobMintingFieldProps> = ({
               justifyContent: 'center',
             }}
           >
-            {'Wrap GLDT'}
+            {'Wrap ckBTC'}
           </button>
         </div>
       </div>

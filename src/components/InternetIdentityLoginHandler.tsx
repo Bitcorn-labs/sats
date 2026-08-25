@@ -1,16 +1,16 @@
-import { idlFactory as sGLDTFactory } from '../declarations/backend';
-import { _SERVICE as sGLDTService } from '../declarations/service_hack/service'; // changed to service.d because dfx generate would remove the export line from index.d
+import { idlFactory as SATSFactory } from '../declarations/backend';
+import { _SERVICE as SATSService } from '../declarations/service_hack/service'; // changed to service.d because dfx generate would remove the export line from index.d
 import { idlFactory as icpFactory } from '../declarations/nns-ledger';
-import { _SERVICE as gldtService } from '../declarations/nns-ledger/index.d';
+import { _SERVICE as ckbtcService } from '../declarations/nns-ledger/index.d';
 import { useEffect, useRef, useState } from 'react';
 import { AuthClient } from '@dfinity/auth-client';
 import { HttpAgent, Actor, AnonymousIdentity } from '@dfinity/agent';
 
 interface InternetIdentityLoginHandlerProps {
-  gldtCanisterID: string;
-  setGldtLedgerActor: (value: gldtService | null) => void;
-  sGLDTCanisterID: string;
-  setsGLDTActor: (value: sGLDTService | null) => void;
+  ckbtcCanisterID: string;
+  setCkBtcLedgerActor: (value: ckbtcService | null) => void;
+  SATSCanisterID: string;
+  setSATSActor: (value: SATSService | null) => void;
   loading: boolean;
   setLoading: (value: boolean) => void;
   isConnected: boolean;
@@ -24,10 +24,10 @@ interface InternetIdentityLoginHandlerProps {
 const InternetIdentityLoginHandler: React.FC<
   InternetIdentityLoginHandlerProps
 > = ({
-  gldtCanisterID,
-  setGldtLedgerActor,
-  sGLDTCanisterID,
-  setsGLDTActor,
+  ckbtcCanisterID,
+  setCkBtcLedgerActor,
+  SATSCanisterID,
+  setSATSActor,
   loading,
   setLoading,
   isConnected,
@@ -43,26 +43,26 @@ const InternetIdentityLoginHandler: React.FC<
 
   const [identityProvider, setIdentityProvider] = useState<URL | null>(null);
 
-  const setupIdentityProvider = (option: number) => {
+  // Returns the provider URL rather than only setting state: authClient.login()
+  // calls window.open(), which browsers permit only inside the synchronous call
+  // stack of a user gesture. The click handler therefore needs the URL
+  // immediately -- a state update would not be visible until the next render.
+  const resolveIdentityProvider = (option: number): URL => {
     //0 for ic0.app; 1 for internetcomputer.org
     if (process.env.DFX_NETWORK === 'local') {
-      setIdentityProvider(
-        new URL('http://br5f7-7uaaa-aaaaa-qaaca-cai.localhost:4943')
-      );
-      return;
-    } else if (option === 0) {
-      setIdentityProvider(new URL('https://identity.ic0.app/'));
+      return new URL('http://br5f7-7uaaa-aaaaa-qaaca-cai.localhost:4943');
     } else if (option === 1) {
-      setIdentityProvider(new URL('https://identity.internetcomputer.org/'));
+      return new URL('https://identity.internetcomputer.org/');
     }
+    return new URL('https://identity.ic0.app/');
   };
 
-  const authClientLogin = async () => {
-    if (!authClient || !identityProvider) return;
+  const authClientLogin = async (provider: URL) => {
+    if (!authClient) return;
 
     return new Promise<void>((resolve, reject) => {
       authClient.login({
-        identityProvider,
+        identityProvider: provider,
         onSuccess: () => {
           console.log('II login success, setting isConnected to true');
           setIsConnected(true); // Set authentication state to true
@@ -77,9 +77,9 @@ const InternetIdentityLoginHandler: React.FC<
     });
   };
 
-  const login = async () => {
+  const login = async (provider: URL) => {
     setLoading(true);
-    await authClientLogin();
+    await authClientLogin(provider);
 
     if (!authClient) return;
 
@@ -89,20 +89,9 @@ const InternetIdentityLoginHandler: React.FC<
     console.log('Setting isConnected to true in login function');
     setIsConnected(true);
     setConnectionType('ii');
-    await createAgent();
+    await createAgent(provider);
     setLoading(false);
   };
-
-  useEffect(() => {
-    if (!identityProvider || !authClient) return;
-
-    // Only login if not already authenticated
-    authClient.isAuthenticated().then(authenticated => {
-      if (!authenticated) {
-        login();
-      }
-    });
-  }, [identityProvider]);
 
   const createAuthClient = async (): Promise<void> => {
     setAuthClient(await AuthClient.create());
@@ -141,27 +130,28 @@ const InternetIdentityLoginHandler: React.FC<
       setIsConnected(false);
       setConnectionType('');
       setLoggedInPrincipal('');
-      setsGLDTActor(null);
-      setGldtLedgerActor(null);
+      setSATSActor(null);
+      setCkBtcLedgerActor(null);
       setIdentityProvider(null);
     }
   };
 
-  const createAgent = async () => {
+  const createAgent = async (provider?: URL) => {
     if (!authClient) {
       console.log('authClientRef was null in createAgent()');
       return;
     }
+    const activeProvider = provider ?? identityProvider;
     const identity = authClient.getIdentity();
 
     const agent = new HttpAgent({
       host:
         process.env.DFX_NETWORK === 'local'
           ? 'http://localhost:4943'
-          : String(identityProvider) ===
+          : String(activeProvider) ===
             'https://identity.internetcomputer.org/'
           ? 'https://internetcomputer.org'
-          : 'https://ic0.app/', // Will identityProvider work?
+          : 'https://ic0.app/',
       identity: identity,
     });
 
@@ -170,17 +160,17 @@ const InternetIdentityLoginHandler: React.FC<
       console.log('aaa');
     }
 
-    setsGLDTActor(
-      await Actor.createActor(sGLDTFactory, {
+    setSATSActor(
+      await Actor.createActor(SATSFactory, {
         agent,
-        canisterId: sGLDTCanisterID,
+        canisterId: SATSCanisterID,
       })
     );
 
-    setGldtLedgerActor(
+    setCkBtcLedgerActor(
       await Actor.createActor(icpFactory, {
         agent,
-        canisterId: gldtCanisterID,
+        canisterId: ckbtcCanisterID,
       })
     );
   };
@@ -202,16 +192,34 @@ const InternetIdentityLoginHandler: React.FC<
             <>
               <button
                 disabled={loading}
-                onClick={() => {
-                  setupIdentityProvider(0);
+                onClick={async () => {
+                  // login() must run inside this handler so the II popup opens
+                  // within the user gesture; a state update would be too late.
+                  const provider = resolveIdentityProvider(0);
+                  setIdentityProvider(provider);
+                  if (!authClient) return;
+                  if (await authClient.isAuthenticated()) {
+                    await checkLoggedIn();
+                    return;
+                  }
+                  await login(provider);
                 }}
               >
                 ic0.app
               </button>
               <button
                 disabled={loading}
-                onClick={() => {
-                  setupIdentityProvider(1);
+                onClick={async () => {
+                  // login() must run inside this handler so the II popup opens
+                  // within the user gesture; a state update would be too late.
+                  const provider = resolveIdentityProvider(1);
+                  setIdentityProvider(provider);
+                  if (!authClient) return;
+                  if (await authClient.isAuthenticated()) {
+                    await checkLoggedIn();
+                    return;
+                  }
+                  await login(provider);
                 }}
               >
                 internetcomputer.org

@@ -1,39 +1,39 @@
 import { useEffect, useState } from 'react';
-import { idlFactory as sGLDTFactory } from '../declarations/backend';
-import { _SERVICE as sGLDTService } from '../declarations/service_hack/service'; // changed to service.d because dfx generate would remove the export line from index.d
+import { idlFactory as SATSFactory } from '../declarations/backend';
+import { _SERVICE as SATSService } from '../declarations/service_hack/service'; // changed to service.d because dfx generate would remove the export line from index.d
 import { idlFactory as icpFactory } from '../declarations/nns-ledger';
-import { _SERVICE as gldtService } from '../declarations/nns-ledger/index.d';
+import { _SERVICE as ckbtcService } from '../declarations/nns-ledger/index.d';
 
 interface PlugLoginHandlerProps {
-  gldtCanisterID: string;
-  setGldtLedgerActor: (value: gldtService | null) => void;
-  sGLDTCanisterID: string;
-  setsGLDTActor: (value: sGLDTService | null) => void;
+  ckbtcCanisterID: string;
+  setCkBtcLedgerActor: (value: ckbtcService | null) => void;
+  SATSCanisterID: string;
+  setSATSActor: (value: SATSService | null) => void;
   loading: boolean;
   setLoading: (value: boolean) => void;
   isConnected: boolean;
   setIsConnected: (value: boolean) => void;
   connectionType: string;
   setConnectionType: (value: string) => void;
-  setGldtLedgerBalance: (value: bigint) => void;
-  setsGLDTLedgerBalance: (value: bigint) => void;
+  setCkBtcLedgerBalance: (value: bigint) => void;
+  setSATSLedgerBalance: (value: bigint) => void;
   loggedInPrincipal: string;
   setLoggedInPrincipal: (value: string) => void;
 }
 
 const PlugLoginHandler: React.FC<PlugLoginHandlerProps> = ({
-  gldtCanisterID,
-  setGldtLedgerActor,
-  sGLDTCanisterID,
-  setsGLDTActor,
+  ckbtcCanisterID,
+  setCkBtcLedgerActor,
+  SATSCanisterID,
+  setSATSActor,
   loading,
   setLoading,
   isConnected,
   setIsConnected,
   connectionType,
   setConnectionType,
-  setGldtLedgerBalance,
-  setsGLDTLedgerBalance,
+  setCkBtcLedgerBalance,
+  setSATSLedgerBalance,
   loggedInPrincipal,
   setLoggedInPrincipal,
 }) => {
@@ -77,18 +77,18 @@ const PlugLoginHandler: React.FC<PlugLoginHandlerProps> = ({
   };
 
   const setUpActors = async () => {
-    console.log('Setting up actors...', gldtCanisterID, sGLDTCanisterID);
+    console.log('Setting up actors...', ckbtcCanisterID, SATSCanisterID);
 
-    setsGLDTActor(
+    setSATSActor(
       await window.ic.plug.createActor({
-        canisterId: sGLDTCanisterID,
-        interfaceFactory: sGLDTFactory,
+        canisterId: SATSCanisterID,
+        interfaceFactory: SATSFactory,
       })
     );
 
-    setGldtLedgerActor(
+    setCkBtcLedgerActor(
       await window.ic.plug.createActor({
-        canisterId: gldtCanisterID,
+        canisterId: ckbtcCanisterID,
         interfaceFactory: icpFactory,
       })
     );
@@ -100,12 +100,12 @@ const PlugLoginHandler: React.FC<PlugLoginHandlerProps> = ({
     if (isConnected && connectionType === 'plug') {
       try {
         await window.ic.plug.disconnect();
-        setsGLDTActor(null);
-        setGldtLedgerActor(null);
+        setSATSActor(null);
+        setCkBtcLedgerActor(null);
         setIsConnected(false);
         setConnectionType('');
-        setGldtLedgerBalance(0n);
-        setsGLDTLedgerBalance(0n);
+        setCkBtcLedgerBalance(0n);
+        setSATSLedgerBalance(0n);
       } catch (error) {
         console.error('Logout failed:', error);
       }
@@ -121,7 +121,7 @@ const PlugLoginHandler: React.FC<PlugLoginHandlerProps> = ({
       if (!connected) {
         const pubkey = await window.ic.plug.requestConnect({
           // whitelist, host, and onConnectionUpdate need to be defined or imported appropriately
-          whitelist: [gldtCanisterID, sGLDTCanisterID],
+          whitelist: [ckbtcCanisterID, SATSCanisterID],
           host:
             process.env.DFX_NETWORK === 'local'
               ? 'http://127.0.0.1:4943'

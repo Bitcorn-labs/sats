@@ -3,31 +3,31 @@ import { TextField, ThemeProvider } from '@mui/material';
 import theme from '../theme';
 import bigintToFloatString from '../bigIntToFloatString';
 import { Principal } from '@dfinity/principal';
-import { _SERVICE as gldtService } from '../declarations/nns-ledger/index.d'; // why is this icpService?
-import { _SERVICE as sGLDTService } from '../declarations/service_hack/service';
+import { _SERVICE as ckbtcService } from '../declarations/nns-ledger/index.d'; // why is this icpService?
+import { _SERVICE as SATSService } from '../declarations/service_hack/service';
 import ShowTransactionStatus from './ShowTransactionStatus';
 
 interface BobWithdrawFieldProps {
   loading: boolean;
   setLoading: (value: boolean) => void;
-  sGLDTLedgerBalance: bigint;
-  sGLDTFee: bigint;
-  gldtFee: bigint;
+  SATSLedgerBalance: bigint;
+  SATSFee: bigint;
+  ckbtcFee: bigint;
   isConnected: boolean;
-  sGLDTActor: sGLDTService | null;
-  sGLDTCanisterID: string;
+  SATSActor: SATSService | null;
+  SATSCanisterID: string;
   cleanUp: () => void;
 }
 
 const BobWithdrawField: React.FC<BobWithdrawFieldProps> = ({
   loading,
   setLoading,
-  sGLDTLedgerBalance,
-  gldtFee,
-  sGLDTFee,
+  SATSLedgerBalance,
+  ckbtcFee,
+  SATSFee,
   isConnected,
-  sGLDTActor,
-  sGLDTCanisterID,
+  SATSActor,
+  SATSCanisterID,
   cleanUp,
 }) => {
   const [reBobFieldValue, setReBobFieldValue] = useState<string>('');
@@ -38,7 +38,9 @@ const BobWithdrawField: React.FC<BobWithdrawFieldProps> = ({
   const [textFieldValueTooLow, setTextFieldValueTooLow] =
     useState<boolean>(true);
 
-  const minimumTransactionAmount: bigint = 1_100_000n;
+  // 16 SATS. Withdrawal releases whole satoshis only and must clear the
+  // 15 raw ckBTC fee, so anything below this is rejected by the backend.
+  const minimumTransactionAmount: bigint = 1_600_000_000n;
 
   const handleWithdrawl = async () => {
     if (!isConnected) {
@@ -47,26 +49,26 @@ const BobWithdrawField: React.FC<BobWithdrawFieldProps> = ({
     }
 
     if (
-      reBobFieldNatValue + gldtFee + sGLDTFee > sGLDTLedgerBalance ||
-      sGLDTLedgerBalance < minimumTransactionAmount
+      reBobFieldNatValue + ckbtcFee + SATSFee > SATSLedgerBalance ||
+      SATSLedgerBalance < minimumTransactionAmount
     ) {
-      // Cover the gldt transfer from backend fee. Cover the sGLDT approval fee. The sGLDT is burned without a fee applied.
-      addStatus('You do not have enough sGLDT.');
+      // Cover the ckbtc transfer from backend fee. Cover the SATS approval fee. The SATS is burned without a fee applied.
+      addStatus('You do not have enough SATS.');
       return;
     }
 
-    if (!sGLDTActor) {
-      addStatus('sGLDT actor not loaded!');
+    if (!SATSActor) {
+      addStatus('SATS actor not loaded!');
       return;
     }
 
     setLoading(true);
 
-// Snassy: This code is not needed (we don't need approval for sGLDT -> GLDT)
+// Snassy: This code is not needed (we don't need approval for SATS -> ckBTC)
 /*
     // This step isn't needed.
-    const approvalResult = await approveSGLDT(
-      reBobFieldNatValue + gldtFee + sGLDTFee
+    const approvalResult = await approveSckBTC(
+      reBobFieldNatValue + ckbtcFee + SATSFee
     );
 
     if (!approvalResult) {
@@ -76,11 +78,11 @@ const BobWithdrawField: React.FC<BobWithdrawFieldProps> = ({
 */
 
 // Snassy: We don't need to add any fee here!
-    const result = await gldtWithdraw(reBobFieldNatValue);
-    // const result = await gldtWithdraw(reBobFieldNatValue + gldtFee);
+    const result = await ckbtcWithdraw(reBobFieldNatValue);
+    // const result = await ckbtcWithdraw(reBobFieldNatValue + ckbtcFee);
 
     if (!result) {
-      addStatus('sGLDT was approved, but was not transferred.');
+      addStatus('SATS was approved, but was not transferred.');
     }
 
     await cleanUp();
@@ -88,25 +90,25 @@ const BobWithdrawField: React.FC<BobWithdrawFieldProps> = ({
     setReBobFieldValue('');
   };
 
-  const approveSGLDT = async (amountInE8s: bigint) => {
-    if (!sGLDTActor) return false;
+  const approveSckBTC = async (amountInE8s: bigint) => {
+    if (!SATSActor) return false;
 
     addStatus(
-      `Requesting to approve ${bigintToFloatString(amountInE8s, 6)} sGLDT.`
+      `Requesting to approve ${bigintToFloatString(amountInE8s, 6)} SATS.`
     );
 
     console.log('before');
 
     try {
-      const approvalResult = await sGLDTActor.icrc2_approve({
-        amount: amountInE8s, // Cover the fee of sending the gldt back to the user.
+      const approvalResult = await SATSActor.icrc2_approve({
+        amount: amountInE8s, // Cover the fee of sending the ckbtc back to the user.
         // Adjust with your canister ID and parameters
         spender: {
-          owner: await Principal.fromText(sGLDTCanisterID),
+          owner: await Principal.fromText(SATSCanisterID),
           subaccount: [],
         },
         memo: [],
-        fee: [sGLDTFee],
+        fee: [SATSFee],
         created_at_time: [BigInt(Date.now()) * 1000000n],
         expires_at: [
           BigInt(Date.now()) * 1000000n + 5n * 60n * 1000n * 1000000n,
@@ -121,24 +123,24 @@ const BobWithdrawField: React.FC<BobWithdrawFieldProps> = ({
 
       if ('Ok' in approvalResult) {
         addStatus(
-          `${bigintToFloatString(amountInE8s, 6)} sGLDT approved for transfer!`
+          `${bigintToFloatString(amountInE8s, 6)} SATS approved for transfer!`
         );
         return true;
       } else {
-        addStatus('sGLDT was not approved for transfer.');
+        addStatus('SATS was not approved for transfer.');
         return false;
       }
     } catch (error) {
-      console.error('Error occurred when approving sGLDT: ', error);
+      console.error('Error occurred when approving SATS: ', error);
       addStatus(
-        "Error occurred when approving sGLDT (Check your web browser's console)"
+        "Error occurred when approving SATS (Check your web browser's console)"
       );
     }
     return false;
   };
 
-  const gldtWithdraw = async (amountInE8s: bigint) => {
-    if (!sGLDTActor) {
+  const ckbtcWithdraw = async (amountInE8s: bigint) => {
+    if (!SATSActor) {
       return false;
     }
 
@@ -147,36 +149,36 @@ const BobWithdrawField: React.FC<BobWithdrawFieldProps> = ({
         `Depositing ${bigintToFloatString(
           amountInE8s,
           6
-        )} sGLDT to burn for GLDT.`
+        )} SATS to burn for ckBTC.`
       );
-      const result = await sGLDTActor.withdraw([], amountInE8s);
+      const result = await SATSActor.withdraw([], amountInE8s);
       if ('ok' in result) {
         addStatus(
           `Swapped ${bigintToFloatString(
             amountInE8s,
             6
-          )} sGLDT for ${bigintToFloatString(
+          )} SATS for ${bigintToFloatString(
             amountInE8s,
             8
-          )} GLDT! sGLDT burned on block ${
+          )} ckBTC! SATS burned on block ${
             result.ok[0]
-          }. GLDT transferred on block ${result.ok[1]}`
+          }. ckBTC transferred on block ${result.ok[1]}`
         );
         return true;
       } else {
         addStatus(
-          "failed to burn sGLDT and return GLDT (Check your web browser's console)"
+          "failed to burn SATS and return ckBTC (Check your web browser's console)"
         );
         console.error(
-          'failed to burn sGLDT and return GLDT',
+          'failed to burn SATS and return ckBTC',
           result.err.toString()
         );
         return false;
       }
     } catch (error) {
-      console.error('Burning sGLDT and returning GLDT failed:', error);
+      console.error('Burning SATS and returning ckBTC failed:', error);
       addStatus(
-        "Burning sGLDT and returning GLDT failed (Check your web browser's console)"
+        "Burning SATS and returning ckBTC failed (Check your web browser's console)"
       );
       return false;
     }
@@ -196,32 +198,32 @@ const BobWithdrawField: React.FC<BobWithdrawFieldProps> = ({
   };
 
   useEffect(() => {
-    const sGLDTNatValue =
+    const SATSNatValue =
       reBobFieldValue && reBobFieldValue !== '.'
         ? BigInt((parseFloat(reBobFieldValue) * 1_0000_0000).toFixed(0)) // Convert to Nat with 8 decimals
         : 0n;
 
-    // console.log(sGLDTNatValue);
-    setButtonDisabled(sGLDTNatValue + gldtFee + sGLDTFee > sGLDTLedgerBalance);
-    setTextFieldValueTooLow(sGLDTNatValue < minimumTransactionAmount);
+    // console.log(SATSNatValue);
+    setButtonDisabled(SATSNatValue + ckbtcFee + SATSFee > SATSLedgerBalance);
+    setTextFieldValueTooLow(SATSNatValue < minimumTransactionAmount);
     setTextFieldErrored(
-      (sGLDTLedgerBalance < minimumTransactionAmount && sGLDTNatValue > 0) ||
-        (sGLDTLedgerBalance >= minimumTransactionAmount &&
-          sGLDTNatValue + gldtFee + sGLDTFee > sGLDTLedgerBalance)
+      (SATSLedgerBalance < minimumTransactionAmount && SATSNatValue > 0) ||
+        (SATSLedgerBalance >= minimumTransactionAmount &&
+          SATSNatValue + ckbtcFee + SATSFee > SATSLedgerBalance)
     );
-    setReBobFieldNatValue(sGLDTNatValue);
-  }, [reBobFieldValue, sGLDTLedgerBalance]);
+    setReBobFieldNatValue(SATSNatValue);
+  }, [reBobFieldValue, SATSLedgerBalance]);
 
   return (
     <ThemeProvider theme={theme}>
-      {sGLDTLedgerBalance < minimumTransactionAmount ? (
+      {SATSLedgerBalance < minimumTransactionAmount ? (
         <>
           <div>
             {`You need at least ${bigintToFloatString(
               minimumTransactionAmount,
               6
             )}
-            $sGLDT to unwrap to GLDT`}
+            $SATS to unwrap to ckBTC`}
           </div>
         </>
       ) : (
@@ -237,13 +239,13 @@ const BobWithdrawField: React.FC<BobWithdrawFieldProps> = ({
       >
         <div>
           <TextField
-            label="sGLDT"
+            label="SATS"
             variant="filled"
             value={reBobFieldValue}
             onChange={handleBobFieldChange}
             helperText={
               buttonDisabled
-                ? "You don't have enough sGLDT!"
+                ? "You don't have enough SATS!"
                 : textFieldValueTooLow
                 ? `You must input at least ${bigintToFloatString(
                     minimumTransactionAmount,
@@ -273,7 +275,7 @@ const BobWithdrawField: React.FC<BobWithdrawFieldProps> = ({
               justifyContent: 'center',
             }}
           >
-            {'Unwrap to GLDT'}
+            {'Unwrap to ckBTC'}
           </button>
         </div>
       </div>

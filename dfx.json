@@ -7,6 +7,13 @@
         "node_compatibility": true
       }
     },
+    "backend-staging": {
+      "type": "motoko",
+      "main": "backend/Backend.mo",
+      "declarations": {
+        "node_compatibility": true
+      }
+    },
     "fakegldt": {
       "type": "motoko",
       "main": "backend/FakeGLDT.mo",
@@ -18,6 +25,18 @@
       "dependencies": ["backend"],
       "type": "assets",
       "source": ["dist/"]
+    },
+    "frontend-staging": {
+      "dependencies": ["backend-staging"],
+      "type": "assets",
+      "source": ["dist/"]
+    },
+    "ntn-test": {
+      "type": "motoko",
+      "main": "ntn/ntntest.mo",
+      "declarations": {
+        "node_compatibility": true
+      }
     },
     "internet_identity": {
       "type": "custom",
