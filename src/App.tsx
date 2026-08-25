@@ -1,8 +1,8 @@
 import './App.css';
 import React, { useState, useEffect, ReactElement, useRef } from 'react';
 import reactLogo from './assets/gold.png';
-import sgldtLogo from './assets/sgldt.png';
-import gldtLogo from './assets/gldtlogo.png';
+import sckbtcLogo from './assets/sgldt.png';
+import ckbtcLogo from './assets/gldtlogo.png';
 // import { useQueryCall, useUpdateCall } from '@ic-reactor/react';
 import { Principal } from '@dfinity/principal';
 // import {Agent, Actor, HttpAgent} from '@dfinity/agent';
@@ -12,31 +12,31 @@ import { AuthClient } from '@dfinity/auth-client';
 import { HttpAgent, Actor, AnonymousIdentity } from '@dfinity/agent';
 
 import { idlFactory as icpFactory } from './declarations/nns-ledger';
-import { _SERVICE as gldtService } from './declarations/nns-ledger/index.d';
+import { _SERVICE as ckbtcService } from './declarations/nns-ledger/index.d';
 
-import { idlFactory as sGLDTFactory } from './declarations/backend';
-import { _SERVICE as sGLDTService } from './declarations/service_hack/service'; // changed to service.d because dfx generate would remove the export line from index.d
+import { idlFactory as SATSFactory } from './declarations/backend';
+import { _SERVICE as SATSService } from './declarations/service_hack/service'; // changed to service.d because dfx generate would remove the export line from index.d
 import { Stats } from './declarations/backend/backend.did.d';
 import { CircularProgress, TextField } from '@mui/material';
-import GLDTMintingField from './components/ReBobMintingField';
+import CkBTCMintingField from './components/ReBobMintingField';
 import ShowTransactionStatus from './components/ShowTransactionStatus';
-import SGLDTWithdrawField from './components/BobWithdrawField';
+import SatsWithdrawField from './components/BobWithdrawField';
 
 import bigintToFloatString from './bigIntToFloatString';
 import PlugLoginHandler from './components/PlugLoginHandler';
 import InternetIdentityLoginHandler from './components/InternetIdentityLoginHandler';
 import TokenManagement from './components/TokenManagement';
-import { gldtCanisterID, sGLDTCanisterID } from './config';
+import { ckbtcCanisterID, SATSCanisterID } from './config';
 
 
 function App() {
   const [loading, setLoading] = useState(false);
   // const [icpBalance, setIcpBalance] = useState<bigint>(0n);
-  const [gldtLedgerBalance, setGldtLedgerBalance] = useState<bigint>(0n);
-  const [sGLDTLedgerBalance, setsGLDTLedgerBalance] = useState<bigint>(0n);
+  const [ckbtcLedgerBalance, setCkBtcLedgerBalance] = useState<bigint>(0n);
+  const [SATSLedgerBalance, setSATSLedgerBalance] = useState<bigint>(0n);
 
-  const [gldtLedgerAllowance, setGldtLedgerAllowance] = useState<bigint>(0n);
-  const [sGLDTLedgerAllowance, setsGLDTLedgerAllowance] = useState<bigint>(0n);
+  const [ckbtcLedgerAllowance, setCkBtcLedgerAllowance] = useState<bigint>(0n);
+  const [SATSLedgerAllowance, setSATSLedgerAllowance] = useState<bigint>(0n);
 
   const [share, setShare] = useState<bigint>(0n);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -44,43 +44,43 @@ function App() {
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [connectionType, setConnectionType] = useState<string>('');
 
-  const [sGLDTActor, setsGLDTActor] = useState<sGLDTService | null>(null);
-  // const [sGLDTActorTemp, setsGLDTActorTemp] = useState<sGLDTService | null>(
+  const [SATSActor, setSATSActor] = useState<SATSService | null>(null);
+  // const [SATSActorTemp, setSATSActorTemp] = useState<SATSService | null>(
   //   null
   // );
-  const [gldtLedgerActor, setGldtLedgerActor] = useState<gldtService | null>(null);
+  const [ckbtcLedgerActor, setCkBtcLedgerActor] = useState<ckbtcService | null>(null);
 
-  const [totalGLDTHeld, setTotalGLDTHeld] = useState<string>('');
-  const [totalSGLDTMinted, setTotalSGLDTMinted] = useState<string>('');
+  const [totalckBTCHeld, setTotalckBTCHeld] = useState<string>('');
+  const [totalSckBTCMinted, setTotalSckBTCMinted] = useState<string>('');
 
   const [loggedInPrincipal, setLoggedInPrincipal] = useState('');
 
-  const gldtFee: bigint = 10_000_000n;
-  const sGLDTFee: bigint = 1_000n;
+  const ckbtcFee: bigint = 10n; // ckBTC ledger fee, raw
+  const SATSFee: bigint = 100n; // SATS ledger fee, raw
 
   const fetchTotalTokens = async () => {
-    // const totalGLDTHeldResponse = await gldtLedgerActor.icrc1_balance_of({
-    //   owner: Principal.fromText(sGLDTCanisterID),
+    // const totalckBTCHeldResponse = await ckbtcLedgerActor.icrc1_balance_of({
+    //   owner: Principal.fromText(SATSCanisterID),
     //   subaccount: [],
     // }); // Can't use plug actors as anonymous.
 
     // We will use the internet identity anonymous calls in the next update. ic0 will work for now.
-    const gldtIcActor = await ic(gldtCanisterID);
+    const ckbtcIcActor = await ic(ckbtcCanisterID);
 
-    const totalGLDTHeldResponse = await gldtIcActor.call('icrc1_balance_of', {
-      owner: Principal.fromText(sGLDTCanisterID),
+    const totalckBTCHeldResponse = await ckbtcIcActor.call('icrc1_balance_of', {
+      owner: Principal.fromText(SATSCanisterID),
       subaccount: [],
     });
 
-    //const totalSGLDTMintedResponse = await sGLDTActor.icrc1_total_supply();
+    //const totalSckBTCMintedResponse = await SATSActor.icrc1_total_supply();
 
-    setTotalGLDTHeld(bigintToFloatString(totalGLDTHeldResponse, 8));
-    //setTotalSGLDTMinted(bigintToFloatString(totalSGLDTMintedResponse));
+    setTotalckBTCHeld(bigintToFloatString(totalckBTCHeldResponse, 8));
+    //setTotalSckBTCMinted(bigintToFloatString(totalSckBTCMintedResponse));
   };
 
   const cleanUp = () => {
     setLoading(false);
-    if (gldtLedgerActor && sGLDTActor) {
+    if (ckbtcLedgerActor && SATSActor) {
       fetchBalances();
       //fetchStats();
     } else {
@@ -100,25 +100,25 @@ function App() {
 
   useEffect(() => {
     // This code runs after `icpActor` and `icdvActor` have been updated.
-    //console.log('actors updated', gldtLedgerActor, sGLDTActor);
+    //console.log('actors updated', ckbtcLedgerActor, SATSActor);
 
     fetchBalances();
     //fetchMinters();
     // Note: If `fetchBalances` depends on `icpActor` or `icdvActor`, you should ensure it's capable of handling null values or wait until these values are not null.
-  }, [gldtLedgerActor, sGLDTActor]);
+  }, [ckbtcLedgerActor, SATSActor]);
 
   // useEffect(() => {
   //   // This code runs after `icpActor` and `icdvActor` have been updated.
-  //   //console.log("actors updated", icpActor, gldtActor, gldtLedgerActor, sGLDTActor);
+  //   //console.log("actors updated", icpActor, ckbtcActor, ckbtcLedgerActor, SATSActor);
 
   //   fetchStats();
   //   //fetchMinters();
   //   // Note: If `fetchBalances` depends on `icpActor` or `icdvActor`, you should ensure it's capable of handling null values or wait until these values are not null.
-  // }, [sGLDTActorTemp]);
+  // }, [SATSActorTemp]);
 
   // const fetchStats = async () => {
-  //   if (sGLDTActorTemp != null) {
-  //     const stats = await sGLDTActorTemp.stats();
+  //   if (SATSActorTemp != null) {
+  //     const stats = await SATSActorTemp.stats();
   //     console.log({ stats });
   //     await setStats(stats);
   //   }
@@ -133,67 +133,67 @@ function App() {
     }
   };
 
-  const getGldtLedgerBalance = async () => {
-    if (gldtLedgerActor === null) return;
+  const getCkBtcLedgerBalance = async () => {
+    if (ckbtcLedgerActor === null) return;
 
     if (!isValidPrincipal(loggedInPrincipal)) return;
 
-    const gldtLedgerBalanceResponse = await gldtLedgerActor.icrc1_balance_of({
+    const ckbtcLedgerBalanceResponse = await ckbtcLedgerActor.icrc1_balance_of({
       owner: Principal.fromText(loggedInPrincipal),
       subaccount: [],
     });
 
-    //console.log('Fetching balances...', { gldtLedgerBalanceResponse });
+    //console.log('Fetching balances...', { ckbtcLedgerBalanceResponse });
 
-    setGldtLedgerBalance(gldtLedgerBalanceResponse);
+    setCkBtcLedgerBalance(ckbtcLedgerBalanceResponse);
   };
 
-  const getSGLDTLedgerBalance = async () => {
-    if (sGLDTActor === null) return;
+  const getSckBTCLedgerBalance = async () => {
+    if (SATSActor === null) return;
     if (!isValidPrincipal(loggedInPrincipal)) return;
-    const sGLDTLedgerBalanceResponse = await sGLDTActor.icrc1_balance_of({
+    const SATSLedgerBalanceResponse = await SATSActor.icrc1_balance_of({
       owner: Principal.fromText(loggedInPrincipal),
       subaccount: [],
     });
 
-    setsGLDTLedgerBalance(sGLDTLedgerBalanceResponse);
+    setSATSLedgerBalance(SATSLedgerBalanceResponse);
 
-    //console.log('Fetching balances...', { sGLDTLedgerBalanceResponse });
+    //console.log('Fetching balances...', { SATSLedgerBalanceResponse });
   };
 
-  const getGldtLedgerAllowance = async () => {
-    if (gldtLedgerActor === null) return;
-    const gldtLedgerAllowanceResponse = await gldtLedgerActor.icrc2_allowance({
+  const getCkBtcLedgerAllowance = async () => {
+    if (ckbtcLedgerActor === null) return;
+    const ckbtcLedgerAllowanceResponse = await ckbtcLedgerActor.icrc2_allowance({
       account: {
         owner: Principal.fromText(loggedInPrincipal),
         subaccount: [],
       },
-      spender: { owner: Principal.fromText(sGLDTCanisterID), subaccount: [] },
+      spender: { owner: Principal.fromText(SATSCanisterID), subaccount: [] },
     });
 
-    setGldtLedgerAllowance(gldtLedgerAllowanceResponse.allowance);
+    setCkBtcLedgerAllowance(ckbtcLedgerAllowanceResponse.allowance);
 
     // console.log(
-    //   'Fetching balances... (gldtLedgerAllowanceResponse)',
-    //   gldtLedgerAllowanceResponse.allowance
+    //   'Fetching balances... (ckbtcLedgerAllowanceResponse)',
+    //   ckbtcLedgerAllowanceResponse.allowance
     // ); // Need to add check if response was good.
   };
 
-  const getSGLDTLedgerAllowance = async () => {
-    if (sGLDTActor === null) return;
-    const sGLDTLedgerAllowanceResponse = await sGLDTActor.icrc2_allowance({
+  const getSckBTCLedgerAllowance = async () => {
+    if (SATSActor === null) return;
+    const SATSLedgerAllowanceResponse = await SATSActor.icrc2_allowance({
       account: {
         owner: Principal.fromText(loggedInPrincipal),
         subaccount: [],
       },
-      spender: { owner: Principal.fromText(sGLDTCanisterID), subaccount: [] },
+      spender: { owner: Principal.fromText(SATSCanisterID), subaccount: [] },
     });
 
-    setsGLDTLedgerAllowance(sGLDTLedgerAllowanceResponse.allowance); // Need to add check if response was good.
+    setSATSLedgerAllowance(SATSLedgerAllowanceResponse.allowance); // Need to add check if response was good.
 
     // console.log(
-    //   'Fetching balances... (sGLDTLedgerAllowanceResponse)',
-    //   sGLDTLedgerAllowanceResponse.allowance
+    //   'Fetching balances... (SATSLedgerAllowanceResponse)',
+    //   SATSLedgerAllowanceResponse.allowance
     // );
   };
 
@@ -206,20 +206,20 @@ function App() {
 
     //if (!isConnected) return;
 
-    // console.log('Fetching balances...', gldtLedgerActor, sGLDTActor);
-    if (gldtLedgerActor === null || sGLDTActor === null) return;
+    // console.log('Fetching balances...', ckbtcLedgerActor, SATSActor);
+    if (ckbtcLedgerActor === null || SATSActor === null) return;
     // Fetch balances (assuming these functions return balances in a suitable format)
 
-    getGldtLedgerBalance();
-    getSGLDTLedgerBalance();
-    getGldtLedgerAllowance();
-    getSGLDTLedgerAllowance();
+    getCkBtcLedgerBalance();
+    getSckBTCLedgerBalance();
+    getCkBtcLedgerAllowance();
+    getSckBTCLedgerAllowance();
   };
 
   const handleFailedWithdraw = async () => {
     setLoading(true);
 
-    //sGLDTWithdraw(sGLDTLedgerAllowance); // 
+    //SATSWithdraw(SATSLedgerAllowance); // 
     setLoading(false);
   };
 
@@ -227,7 +227,7 @@ function App() {
   const handleFailedMint = async () => {
     setLoading(true);
 
-    //gldtDeposit(gldtLedgerAllowance);
+    //ckbtcDeposit(ckbtcLedgerAllowance);
 
     setLoading(false);
   };
@@ -242,13 +242,13 @@ function App() {
       <div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
           <h1>sVAULT</h1>
-          <img src={sgldtLogo} alt="sGLDT Logo" style={{ height: '40px', width: 'auto' }} />
+          <img src={sckbtcLogo} alt="SATS Logo" style={{ height: '40px', width: 'auto' }} />
         </div>
-        <h2>Reduce the fees associated with Gold Token by Wrapping for sGLDT</h2>
+        <h2>Reduce the fees associated with Bitcoin by wrapping ckBTC for SATS</h2>
         <h3>
-          Total GLDT In Vault:{' '}
-          {totalGLDTHeld !== '' ? (
-            <>{totalGLDTHeld} GLDT</>
+          Total ckBTC In Vault:{' '}
+          {totalckBTCHeld !== '' ? (
+            <>{totalckBTCHeld} ckBTC</>
           ) : (
             <>
               <CircularProgress size={16} />
@@ -258,27 +258,27 @@ function App() {
       </div>
 
       <PlugLoginHandler
-        gldtCanisterID={gldtCanisterID}
-        setGldtLedgerActor={setGldtLedgerActor}
-        sGLDTCanisterID={sGLDTCanisterID}
-        setsGLDTActor={setsGLDTActor}
+        ckbtcCanisterID={ckbtcCanisterID}
+        setCkBtcLedgerActor={setCkBtcLedgerActor}
+        SATSCanisterID={SATSCanisterID}
+        setSATSActor={setSATSActor}
         loading={loading}
         setLoading={setLoading}
         isConnected={isConnected}
         setIsConnected={setIsConnected}
         connectionType={connectionType}
         setConnectionType={setConnectionType}
-        setGldtLedgerBalance={setGldtLedgerBalance}
-        setsGLDTLedgerBalance={setsGLDTLedgerBalance}
+        setCkBtcLedgerBalance={setCkBtcLedgerBalance}
+        setSATSLedgerBalance={setSATSLedgerBalance}
         loggedInPrincipal={loggedInPrincipal}
         setLoggedInPrincipal={setLoggedInPrincipal}
       />
 
       <InternetIdentityLoginHandler
-        gldtCanisterID={gldtCanisterID}
-        setGldtLedgerActor={setGldtLedgerActor}
-        sGLDTCanisterID={sGLDTCanisterID}
-        setsGLDTActor={setsGLDTActor}
+        ckbtcCanisterID={ckbtcCanisterID}
+        setCkBtcLedgerActor={setCkBtcLedgerActor}
+        SATSCanisterID={SATSCanisterID}
+        setSATSActor={setSATSActor}
         loading={loading}
         setLoading={setLoading}
         isConnected={isConnected}
@@ -313,21 +313,21 @@ function App() {
               }}
             >
               <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <img src={gldtLogo} alt="GLDT Logo" style={{ height: '24px', width: 'auto' }} />
-                Wrap GLDT:
+                <img src={ckbtcLogo} alt="ckBTC Logo" style={{ height: '24px', width: 'auto' }} />
+                Wrap ckBTC:
               </h2>
-              <h3>$GLDT Balance: {bigintToFloatString(gldtLedgerBalance)}</h3>
-              <GLDTMintingField
+              <h3>$ckBTC Balance: {bigintToFloatString(ckbtcLedgerBalance)}</h3>
+              <CkBTCMintingField
                 loading={loading}
                 setLoading={setLoading}
-                gldtLedgerBalance={gldtLedgerBalance}
-                gldtFee={gldtFee}
+                ckbtcLedgerBalance={ckbtcLedgerBalance}
+                ckbtcFee={ckbtcFee}
                 isConnected={isConnected}
-                sGLDTCanisterID={sGLDTCanisterID}
-                gldtLedgerActor={gldtLedgerActor}
+                SATSCanisterID={SATSCanisterID}
+                ckbtcLedgerActor={ckbtcLedgerActor}
                 cleanUp={cleanUp}
-                sGLDTActor={sGLDTActor}
-                minimumTransactionAmount={50000000n}
+                SATSActor={SATSActor}
+                minimumTransactionAmount={1000n}
               />
               <p></p>
             </div>
@@ -341,22 +341,22 @@ function App() {
               }}
             >
               <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <img src={sgldtLogo} alt="sGLDT Logo" style={{ height: '24px', width: 'auto' }} />
-                Unwrap sGLDT:
+                <img src={sckbtcLogo} alt="SATS Logo" style={{ height: '24px', width: 'auto' }} />
+                Unwrap SATS:
               </h2>
-              <p style={{ fontSize: '14px', color: '#222', marginTop: '4px', marginBottom: '8px' }}>The Vault charges a .2 fee per transaction to redeem sGLDT back to GLDT</p>
+              <p style={{ fontSize: '14px', color: '#222', marginTop: '4px', marginBottom: '8px' }}>Unwrapping costs 15 SATS per transaction — 10 for the ckBTC network fee and 5 for the vault</p>
               <h3>
-                $sGLDT Balance: {bigintToFloatString(sGLDTLedgerBalance, 8)}
+                $SATS Balance: {bigintToFloatString(SATSLedgerBalance, 8)}
               </h3>
-              <SGLDTWithdrawField
+              <SatsWithdrawField
                 loading={loading}
                 setLoading={setLoading}
-                sGLDTLedgerBalance={sGLDTLedgerBalance}
-                sGLDTFee={sGLDTFee}
-                gldtFee={gldtFee}
+                SATSLedgerBalance={SATSLedgerBalance}
+                SATSFee={SATSFee}
+                ckbtcFee={ckbtcFee}
                 isConnected={isConnected}
-                sGLDTActor={sGLDTActor}
-                sGLDTCanisterID={sGLDTCanisterID}
+                SATSActor={SATSActor}
+                SATSCanisterID={SATSCanisterID}
                 cleanUp={cleanUp}
               />
             </div>
@@ -375,18 +375,18 @@ function App() {
                 setLoading={setLoading}
                 tokens={[
                   {
-                    tokenActor: gldtLedgerActor,
-                    tokenFee: gldtFee,
-                    tokenTicker: 'GLDT',
+                    tokenActor: ckbtcLedgerActor,
+                    tokenFee: ckbtcFee,
+                    tokenTicker: 'ckBTC',
                     tokenDecimals: 8,
-                    tokenLedgerBalance: gldtLedgerBalance,
+                    tokenLedgerBalance: ckbtcLedgerBalance,
                   },
                   {
-                    tokenActor: sGLDTActor,
-                    tokenFee: sGLDTFee,
-                    tokenTicker: 'sGLDT',
+                    tokenActor: SATSActor,
+                    tokenFee: SATSFee,
+                    tokenTicker: 'SATS',
                     tokenDecimals: 8,
-                    tokenLedgerBalance: sGLDTLedgerBalance,
+                    tokenLedgerBalance: SATSLedgerBalance,
                   },
                 ]}
                 cleanUp={cleanUp}

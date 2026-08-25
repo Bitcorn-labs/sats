@@ -4,7 +4,7 @@ import App from './App';
 import './index.scss';
 import { ActorProvider, AgentProvider } from '@ic-reactor/react';
 import { idlFactory } from './declarations/backend';
-import { sGLDTCanisterID as canisterId } from './config';
+import { SATSCanisterID as canisterId } from './config';
 
 import { Principal } from '@dfinity/principal';
 
