@@ -663,13 +663,17 @@ shared ({ caller = _owner }) actor class Token(
                 },
               );
 
-              // Never discard this: minting to the minting account is rejected,
-              // so a collector pointed at this canister makes the fee vanish
-              // silently and the value sits in reserves unbacked.
-              // icrc1().mint returns a plain TransferResult, NOT a Star -- it
+              // Never discard this. Whether the mint succeeds is a property of
+              // the deployment, not the code: it works while the collector is a
+              // normal account distinct from the minting account -- verified on
+              // the sibling GLDT ledger, where 428 of these mints succeeded --
+              // and fails silently the moment the collector is pointed at the
+              // minting account, retaining ckBTC as unbacked surplus.
+              //
+              // icrc1().mint returns a plain TransferResult, NOT a Star: it
               // unwraps the Star internally and traps on the #err arms. Matching
-              // #trappable/#awaited/#err here compiles but never fires (moc
-              // M0146), so the failure would still be swallowed by `case (_)`.
+              // #trappable/#awaited/#err compiles but never fires (moc M0146),
+              // which would leave the failure swallowed by `case (_)`.
               switch (mintFeeResult) {
                 case (#Err(err)) {
                   log.add(debug_show (Time.now()) # " conversion fee mint failed: " # debug_show (err));
@@ -1014,12 +1018,14 @@ shared ({ caller = _owner }) actor class Token(
   public query func get_fee_breakdown() : async {
     ckbtc_ledger_fee : Nat;
     canister_withdraw_fee : Nat;
-    sgldt_transfer_fee : Nat;
+    sats_transfer_fee : Nat;
   } {
     {
-      ckbtc_ledger_fee = ckbtc_transaction_fee; // 0.1 GLDT
-      canister_withdraw_fee = ckbtc_conversion_fee; // 0.2 sGLDT
-      sgldt_transfer_fee = 1_000; // 0.00001 sGLDT
+      ckbtc_ledger_fee = ckbtc_transaction_fee; // raw ckBTC, the ckBTC ledger's own fee
+      canister_withdraw_fee = ckbtc_conversion_fee; // raw ckBTC, protocol revenue
+      // Read from the ledger rather than restated, so it cannot drift from the
+      // fee actually charged if #Fee is changed via admin_update_icrc1.
+      sats_transfer_fee = icrc1().fee(); // raw SATS
     };
   };
 

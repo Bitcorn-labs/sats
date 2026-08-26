@@ -3,13 +3,13 @@
 Compiled canister module for this branch, committed so the deployed code can be
 verified against source without rebuilding.
 
-Built from commit `d1364a6` with **dfx 0.28.0** (`DFX_VERSION=0.28.0`).
+Built from commit `HEAD` with **dfx 0.28.0** (`DFX_VERSION=0.28.0`).
 
 ## Hashes
 
 | Artifact | SHA-256 |
 |---|---|
-| `backend.wasm` | `844bfb594b7742af176479ab0002d055b217672edbeca38de8dc4c65891c224f` |
+| `backend.wasm` | `b3a908318c9ccdd65fbe058bbb2ecd8c4e6bcc2c327cbd2b4d4ce0d00ce4ef47` |
 
 `backend` and `backend-staging` share `backend/Backend.mo` and compile to the
 same module, so a single `backend.wasm` covers both.
@@ -18,7 +18,7 @@ same module, so a single `backend.wasm` covers both.
 
 | Canister | ID | On-chain module | Matches |
 |---|---|---|---|
-| backend (production) | `4fu6t-haaaa-aaaap-quxda-cai` | `844bfb59…` | yes |
+| backend (production) | `4fu6t-haaaa-aaaap-quxda-cai` | `b3a90831…` | yes |
 
 SATS has **no frontend canister and no staging environment**. The staging
 canisters this repo inherited from Bobsplitter (`5r3gp…`, `coqqu…`) were

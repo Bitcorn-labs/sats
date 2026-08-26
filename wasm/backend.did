@@ -208,7 +208,7 @@ type Token =
     (record {
        canister_withdraw_fee: nat;
        ckbtc_ledger_fee: nat;
-       sgldt_transfer_fee: nat;
+       sats_transfer_fee: nat;
      }) query;
    get_fee_collector: () -> (principal) query;
    get_fee_stats: () ->
