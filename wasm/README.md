@@ -1,29 +1,29 @@
 # Build artifacts
 
-Compiled canister modules for this branch, committed so the deployed code can
-be verified against source without rebuilding.
+Compiled canister module for this branch, committed so the deployed code can be
+verified against source without rebuilding.
 
-Built from commit `169b302` with **dfx 0.28.0** (`DFX_VERSION=0.28.0`).
+Built from commit `d1364a6` with **dfx 0.28.0** (`DFX_VERSION=0.28.0`).
 
 ## Hashes
 
 | Artifact | SHA-256 |
 |---|---|
-| `backend.wasm` | `b18b2f79d4b79c2b84da4737c39c5df66472700324736147a27a4807c7a14029` |
-| `frontend.wasm.gz` | `2f73b9e18b992f221a5fbab7fc59d840a9cbc461f7cfe875049f51354d23696c` |
+| `backend.wasm` | `844bfb594b7742af176479ab0002d055b217672edbeca38de8dc4c65891c224f` |
 
 `backend` and `backend-staging` share `backend/Backend.mo` and compile to the
-same module, so a single `backend.wasm` covers both. Likewise `frontend` and
-`frontend-staging` are the stock dfx asset canister and share one module.
+same module, so a single `backend.wasm` covers both.
 
 ## Deployed state at time of commit
 
 | Canister | ID | On-chain module | Matches |
 |---|---|---|---|
-| backend-staging | `5r3gp-3iaaa-aaaap-qqaeq-cai` | `b18b2f79…` | yes |
-| frontend-staging | `coqqu-zaaaa-aaaai-q32ma-cai` | `2f73b9e1…` | yes |
-| backend (prod) | `i2s4q-syaaa-aaaan-qz4sq-cai` | `88612b28…` | no — older module |
-| frontend (prod) | `itrxm-eqaaa-aaaan-qz4ta-cai` | `865eb25d…` | no — older module |
+| backend (production) | `4fu6t-haaaa-aaaap-quxda-cai` | `844bfb59…` | yes |
+
+SATS has **no frontend canister and no staging environment**. The staging
+canisters this repo inherited from Bobsplitter (`5r3gp…`, `coqqu…`) were
+returned to that project on 2026-08-25, so `canister_ids.json` entries for them
+do not describe anything SATS deploys.
 
 ## Reproducing
 
@@ -36,15 +36,18 @@ The default dfx (0.31.0) **cannot build this project** — it rejects
 `icrc3-mo@0.3.5` with M0219 (implicit transient). 0.27.0 and earlier fail on
 `sha2@0.1.4`. Use 0.28.0.
 
-## Note on the frontend module
+## Minting account
 
-`frontend.wasm.gz` is the stock dfx asset canister and contains **no** application
-code — the UI ships as assets uploaded into it. Its hash is therefore identical
-for the production and staging builds and says nothing about which backend the
-app targets. Verify a frontend deployment by fetching the live bundle:
+This module moves the minting account off the canister's default account onto a
+tagged subaccount, so that a transfer to `4fu6t-haaaa-aaaap-quxda-cai` is no
+longer a burn. The subaccount lives in **ledger state, not init args** — an
+upgrade alone does not move it. An existing deployment needs a one-time:
 
 ```bash
-curl -s https://<canister>.icp0.io/ | grep -oE '/assets/index-[a-z0-9]+\.js'
+dfx canister --network ic call <canister> admin_update_icrc1 \
+  '(vec { variant { MintingAccount = record {
+     owner = principal "<canister>";
+     subaccount = opt blob "\\6d\\69\\6e\\74\\69\\6e\\67\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00" } } })'
 ```
 
-Staging must contain `5r3gp-3iaaa-aaaap-qqaeq-cai`; production `i2s4q-syaaa-aaaan-qz4sq-cai`.
+Verify with `icrc1_minting_account`.

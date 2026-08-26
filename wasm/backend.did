@@ -189,9 +189,9 @@ type Token =
    admin_collect_fees: () -> (Result_2);
    admin_update_authorized_fee_collector: (new_collector: principal) ->
     (bool);
+   admin_update_ckbtc_conversion_fee: (new_fee: nat) -> (bool);
+   admin_update_ckbtc_transaction_fee: (new_fee: nat) -> (bool);
    admin_update_fee_collector: (new_collector: principal) -> (bool);
-   admin_update_gldt_conversion_fee: (new_fee: nat) -> (bool);
-   admin_update_gldt_transaction_fee: (new_fee: nat) -> (bool);
    admin_update_icrc1: (requests: vec UpdateLedgerInfoRequest__2) ->
     (vec bool);
    admin_update_icrc2: (requests: vec UpdateLedgerInfoRequest__1) ->
@@ -207,7 +207,7 @@ type Token =
    get_fee_breakdown: () ->
     (record {
        canister_withdraw_fee: nat;
-       gldt_ledger_fee: nat;
+       ckbtc_ledger_fee: nat;
        sgldt_transfer_fee: nat;
      }) query;
    get_fee_collector: () -> (principal) query;
@@ -219,7 +219,7 @@ type Token =
        total_withdraw_fees: nat;
      }) query;
    get_log: () -> (vec text) query;
-   get_sgldt_balance: () -> (nat) query;
+   get_sats_balance: () -> (nat) query;
    get_tip: () -> (Tip) query;
    get_transactions: (args: record {
                               length: nat;
