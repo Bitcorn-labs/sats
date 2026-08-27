@@ -516,7 +516,7 @@ shared ({ caller = _owner }) actor class Token(
           owner = caller;
           subaccount = subaccount;
         };
-        memo = ?Blob.toArray("\98\5c\db\3b\74\ce\88\61\3a\35\ee\2e\0e\39\a9\f6\c5\1d\ee\e9\ea\53\89\2d\e8\da\53\da\de\46\57\64" : Blob); //"GLDT Return"
+        memo = ?Blob.toArray("\20\5e\86\b6\0c\cc\a7\68\db\f6\3f\4b\31\33\ab\30\a5\e5\d6\a3\dd\c2\05\14\49\82\b3\5d\07\38\90\36" : Blob); // sha256("SATS Refund") - ckBTC returned after a failed deposit mint
         created_at_time = ?time64();
         amount = amount;
       });
@@ -548,7 +548,7 @@ shared ({ caller = _owner }) actor class Token(
           owner = caller;
           subaccount = subaccount;
         };
-        memo = ?Blob.toArray("\4d\03\4c\3e\2f\15\84\ae\3d\86\d6\70\a5\e2\7e\9b\ad\3c\14\17\a6\3c\d8\9e\9b\f9\37\01\35\8d\c3\0e" : Blob); // memo tag, inherited from the GLDT fork; the bytes are load-bearing
+        memo = ?Blob.toArray("\db\e3\b6\f3\88\89\d3\f1\38\0f\74\f4\d3\97\99\1a\17\41\1b\16\2d\06\05\ab\a9\de\7c\ae\d5\ed\4f\28" : Blob); // sha256("SATS Deposit") - ckBTC pulled in on wrap
         created_at_time = ?time64();
         amount = amount;
       });
@@ -585,7 +585,7 @@ shared ({ caller = _owner }) actor class Token(
         };
         amount = mintingAmount; // The number of tokens to mint.
         created_at_time = ?time64();
-        memo = ?("\6d\7a\68\d6\ce\4d\2f\8e\60\72\af\e3\73\91\c8\d8\67\b5\6f\69\35\bc\ca\9a\7b\d9\40\19\fd\6e\3c\16" : Blob); // memo tag, inherited from the GLDT fork; the bytes are load-bearing
+        memo = ?("\06\ee\c5\69\5c\27\ba\3d\09\07\54\0c\93\2d\aa\16\ca\c8\d4\ff\eb\ff\13\98\e9\f6\3b\88\3e\c4\5a\7f" : Blob); // sha256("SATS Mint") - SATS issued against it
       },
     );
 
@@ -640,7 +640,7 @@ shared ({ caller = _owner }) actor class Token(
           case (?val) ?Blob.fromArray(val);
         }; // The subaccount from which tokens are burned.
         amount = burn_amount; // whole satoshis only; the remainder stays with the caller
-        memo = ?("\d8\d9\b4\5f\41\5d\5a\c3\be\e5\21\2c\10\f4\bb\6d\07\52\7d\01\17\7e\58\e0\13\03\39\90\00\c5\a8\94" : Blob); // memo tag, inherited from the GLDT fork; the bytes are load-bearing
+        memo = ?("\28\d8\70\88\d3\94\fc\6d\5d\f7\4d\f9\86\d2\4e\2c\e0\63\29\b2\39\57\06\a2\9c\fb\69\8e\93\18\b2\8e" : Blob); // sha256("SATS Withdraw") - SATS burned on unwrap
         created_at_time = ?time64(); // The time the burn operation was created.
       },
     );
@@ -657,7 +657,7 @@ shared ({ caller = _owner }) actor class Token(
         };
         fee = null;
         from_subaccount = null;
-        memo = ?Blob.toArray("\d8\d9\b4\5f\41\5d\5a\c3\be\e5\21\2c\10\f4\bb\6d\07\52\7d\01\17\7e\58\e0\13\03\39\90\00\c5\a8\94"); // memo tag, inherited from the GLDT fork; the bytes are load-bearing
+        memo = ?Blob.toArray("\28\d8\70\88\d3\94\fc\6d\5d\f7\4d\f9\86\d2\4e\2c\e0\63\29\b2\39\57\06\a2\9c\fb\69\8e\93\18\b2\8e"); // sha256("SATS Withdraw") - ckBTC paid out
         created_at_time = ?time64();
         amount = gross_ckbtc - ckbtc_total_fee; // raw ckBTC out
       },
@@ -678,7 +678,7 @@ shared ({ caller = _owner }) actor class Token(
                 {
                   to = fee_collector;
                   amount = Convert.toSats(ckbtc_conversion_fee); // retained in ckBTC, minted in SATS
-                  memo = ?("\d8\d9\b4\5f\41\5d\5a\c3\be\e5\21\2c\10\f4\bb\6d\07\52\7d\01\17\7e\58\e0\13\03\39\90\00\c5\a8\94" : Blob); // memo tag, inherited from the GLDT fork; the bytes are load-bearing
+                  memo = ?("\80\5c\0b\cd\2b\66\0a\44\e2\b5\1a\53\ab\8c\46\21\af\9d\dd\eb\02\06\3b\85\c1\fe\99\f8\e1\5d\31\d4" : Blob); // sha256("SATS Fee") - conversion fee minted to the collector
                   created_at_time = ?time64(); // The time the burn operation was created.
                 },
               );
@@ -727,7 +727,7 @@ shared ({ caller = _owner }) actor class Token(
               }; // The subaccount from which tokens are burned.
             };
             amount = burn_amount; // must match exactly what was burned
-            memo = ?("\d8\d9\b4\5f\41\5d\5a\c3\be\e5\21\2c\10\f4\bb\6d\07\52\7d\01\17\7e\58\e0\13\03\39\90\00\c5\a8\94" : Blob); // memo tag, inherited from the GLDT fork; the bytes are load-bearing
+            memo = ?("\20\5e\86\b6\0c\cc\a7\68\db\f6\3f\4b\31\33\ab\30\a5\e5\d6\a3\dd\c2\05\14\49\82\b3\5d\07\38\90\36" : Blob); // sha256("SATS Refund") - SATS re-minted after a failed payout
             created_at_time = ?time64(); // The time the burn operation was created.
           },
         );
