@@ -1,4 +1,4 @@
-import ckbtcIcon from '../../assets/ckbtc.png';
+import ckbtcIcon from '../../assets/ckbtc.svg';
 import satsIcon from '../../assets/sats_black.svg';
 import type { Ticker } from '../../lib/tokens';
 import styles from './TokenIcon.module.css';
