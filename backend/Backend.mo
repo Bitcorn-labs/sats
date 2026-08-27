@@ -565,14 +565,27 @@ shared ({ caller = _owner }) actor class Token(
         amount = amount;
       });
     } catch (e) {
-      log.add(debug_show (Time.now()) # "trying transfer from " # Error.message(e));
-      D.trap("cannot transfer from failed" # Error.message(e));
+      // Returned, not trapped. Trapping rolls back this call's own state, but
+      // it cannot undo an inter-canister transfer that already committed on the
+      // ckBTC ledger -- so it buys nothing and costs the caller a legible
+      // error, surfacing as IC0503 "trapped explicitly" plus a raw Candid dump.
+      // Nothing here has moved value yet: reaching this point means the pull
+      // failed, so returning is safe.
+      let msg = "cannot pull ckBTC - " # Error.message(e);
+      log.add(debug_show (Time.now()) # " deposit failed: " # msg);
+      lastError := (msg, Time.now());
+      return #err(msg);
     };
 
     let block = switch (result) {
       case (#Ok(block)) block;
       case (#Err(err)) {
-        D.trap("cannot transfer from failed" # debug_show (err));
+        // The ledger rejected the pull, so no ckBTC moved and there is nothing
+        // to unwind. Report it the way withdraw() reports its failures.
+        let msg = "cannot pull ckBTC - " # debug_show (err);
+        log.add(debug_show (Time.now()) # " deposit failed: " # msg);
+        lastError := (msg, Time.now());
+        return #err(msg);
       };
     };
 
