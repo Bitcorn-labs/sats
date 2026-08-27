@@ -81,12 +81,22 @@ shared ({ caller = _owner }) actor class Token(
     max_memo = ?32;
     advanced_settings = null;
     metadata = null;
-    // Must be a NORMAL account, never this canister's own. The conversion fee in
-    // withdraw() is paid via icrc1().mint(), and minting to the minting account
-    // is rejected -- the result is discarded, so it fails silently and the fee
-    // is retained as unbacked surplus instead. Verified live on 2026-08-25.
+    // This canister's OWN default account, which is where admin_collect_fees
+    // looks: it reads balance_of({owner = this; subaccount = null}) and splits
+    // the result 50/50 between the two payout principals. Pointing the
+    // collector at one of those principals instead sends every fee straight
+    // there, so the split never runs and the second recipient is paid nothing.
+    //
+    // Safe only because the minting account sits on minting_sub_account. Both
+    // halves depend on that:
+    //   - the conversion-fee mint has `from` = the minting account, so it is
+    //     classified a mint and credits this account;
+    //   - admin_collect_fees sends `from` = this account, which is NOT the
+    //     minting account, so it is an ordinary transfer that debits a real
+    //     balance and pays the ledger fee the function already subtracts.
+    // Were the minting account back on subaccount null the two would collide.
     fee_collector = ?{
-      owner = Principal.fromText("okpx5-c7nln-u3qii-ub55e-374ug-kjede-segkn-jgbv5-dkbfr-m55ma-yqe");
+      owner = Principal.fromActor(this);
       subaccount = null;
     };
     transaction_window = null;
