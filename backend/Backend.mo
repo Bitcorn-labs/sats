@@ -1130,8 +1130,16 @@ shared ({ caller = _owner }) actor class Token(
     },
   );
 
+  // icrc2-mo hardcodes `icrc103:public_allowances = "true"` in its metadata
+  // (lib.mo:384), a claim that any principal may read any other principal's
+  // allowances. This canister exposes no ICRC-103 endpoint at all, so the claim
+  // is false as published. set_private_mode(false) rewrites it; it is idempotent,
+  // so running it on every upgrade also corrects canisters already deployed with
+  // the default. The InitArgs knob that would set this declaratively only exists
+  // from icrc2-mo 0.2.1, which this project has not migrated to yet.
   system func postupgrade() {
     ignore icrc1().init_metadata();
+    ignore icrc2().set_private_mode(false);
   };
   //re wire up the listener after upgrade
   //uncomment the following line to register the transfer_listener
