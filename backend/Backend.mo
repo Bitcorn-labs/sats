@@ -8,12 +8,10 @@ import Principal "mo:base/Principal";
 import Time "mo:base/Time";
 import Timer "mo:base/Timer";
 
-import CertifiedData "mo:base/CertifiedData";
 import Nat64 "mo:base/Nat64";
 import CertTree "mo:cert/CertTree";
 
 import ICRC1 "mo:icrc1-mo/ICRC1";
-import Account "mo:icrc1-mo/ICRC1/Account";
 import ICRC2 "mo:icrc2-mo/ICRC2";
 import ICRC3 "mo:icrc3-mo/";
 import ICRC3Legacy "mo:icrc3-mo/legacy";
@@ -35,8 +33,6 @@ shared ({ caller = _owner }) actor class Token(
   }
 ) = this {
 
-  let Set = ICRC1.Set;
-  let Map = ICRC1.Map;
 
   // The minting account deliberately uses a NON-DEFAULT subaccount.
   //
@@ -242,13 +238,11 @@ shared ({ caller = _owner }) actor class Token(
   stable var upgradeError = "";
   stable var upgradeComplete = false;
 
-  let #v0_1_0(#data(icrc1_state_current)) = icrc1_migration_state;
+  // Refutable on purpose: this traps at init if the migration state is not
+  // v0_1_0, so the assertion is kept even though nothing reads the payload.
+  let #v0_1_0(#data(_)) = icrc1_migration_state;
 
   private var _icrc1 : ?ICRC1.ICRC1 = null;
-
-  private func get_icrc1_state() : ICRC1.CurrentState {
-    return icrc1_state_current;
-  };
 
   private func get_icrc1_environment() : ICRC1.Environment {
     {
@@ -296,13 +290,11 @@ shared ({ caller = _owner }) actor class Token(
     };
   };
 
-  let #v0_1_0(#data(icrc2_state_current)) = icrc2_migration_state;
+  // Refutable on purpose: this traps at init if the migration state is not
+  // v0_1_0, so the assertion is kept even though nothing reads the payload.
+  let #v0_1_0(#data(_)) = icrc2_migration_state;
 
   private var _icrc2 : ?ICRC2.ICRC2 = null;
-
-  private func get_icrc2_state() : ICRC2.CurrentState {
-    return icrc2_state_current;
-  };
 
   private func get_icrc2_environment() : ICRC2.Environment {
     {
@@ -322,13 +314,11 @@ shared ({ caller = _owner }) actor class Token(
     };
   };
 
-  let #v0_1_0(#data(icrc4_state_current)) = icrc4_migration_state;
+  // Refutable on purpose: this traps at init if the migration state is not
+  // v0_1_0, so the assertion is kept even though nothing reads the payload.
+  let #v0_1_0(#data(_)) = icrc4_migration_state;
 
   private var _icrc4 : ?ICRC4.ICRC4 = null;
-
-  private func get_icrc4_state() : ICRC4.CurrentState {
-    return icrc4_state_current;
-  };
 
   private func get_icrc4_environment() : ICRC4.Environment {
     {
@@ -348,7 +338,7 @@ shared ({ caller = _owner }) actor class Token(
     };
   };
 
-  private func updated_certification(cert : Blob, lastIndex : Nat) : Bool {
+  private func updated_certification(_cert : Blob, _lastIndex : Nat) : Bool {
     ct.setCertifiedData();
     return true;
   };
@@ -496,7 +486,6 @@ shared ({ caller = _owner }) actor class Token(
     Nat64.fromNat(Int.abs(Time.now()));
   };
 
-  let ONE_DAY = 86_400_000_000_000;
 
   stable var lastError : (Text, Int) = ("null", 0);
 
@@ -507,9 +496,18 @@ shared ({ caller = _owner }) actor class Token(
     lastError;
   };
 
+  /// Send the caller's ckBTC back after a deposit whose mint failed.
+  ///
+  /// This is the last thing standing between a failed wrap and the caller's
+  /// ckBTC sitting in this canister with no SATS issued against it, so neither
+  /// failure mode may be swallowed: icrc1_transfer can trap, and it can also
+  /// return #Err. Previously the result was bound and discarded and the catch
+  /// dropped its reason, so a rejected refund fell through to the generic
+  /// "cannot transfer to minter" -- which reads as the original mint failure
+  /// and says nothing about the funds now being stuck.
   private func refund(caller : Principal, subaccount : ?[Nat8], amount : Nat, e : Text) : async* Result.Result<(Nat, Nat), Text> {
-    try {
-      let result = await Ledger.icrc1_transfer({
+    let result = try {
+      await Ledger.icrc1_transfer({
         from_subaccount = null;
         fee = null;
         to = {
@@ -520,8 +518,22 @@ shared ({ caller = _owner }) actor class Token(
         created_at_time = ?time64();
         amount = amount;
       });
-    } catch (e) {
-      return #err("stuck funds");
+    } catch (trapped) {
+      log.add(debug_show (Time.now()) # " STUCK FUNDS - refund trapped: " # Error.message(trapped));
+      return #err("stuck funds - " # Error.message(trapped));
+    };
+
+    switch (result) {
+      case (#Err(refundErr)) {
+        // Pulled in, not minted, and not returned. Nothing here can recover it.
+        log.add(debug_show (Time.now()) # " STUCK FUNDS - refund rejected: " # debug_show (refundErr));
+        return #err(
+          "cannot transfer to minter " # e
+          # " and the refund was rejected: " # debug_show (refundErr)
+          # " - funds are stuck, contact the canister owner"
+        );
+      };
+      case (#Ok(_)) {};
     };
 
     return #err("cannot transfer to minter " # e);
@@ -802,7 +814,7 @@ shared ({ caller = _owner }) actor class Token(
     return ICRC1.Vector.toArray(results);
   };
 
-  public query ({ caller }) func icrc2_allowance(args : ICRC2.AllowanceArgs) : async ICRC2.Allowance {
+  public query func icrc2_allowance(args : ICRC2.AllowanceArgs) : async ICRC2.Allowance {
     return icrc2().allowance(args.spender, args.account, false);
   };
 
@@ -1050,19 +1062,9 @@ shared ({ caller = _owner }) actor class Token(
   };
 
   /* /// Uncomment this code to establish have icrc1 notify you when a transaction has occured.
-  private func transfer_listener(trx: ICRC1.Transaction, trxid: Nat) : () {
-
-  };
-
   /// Uncomment this code to establish have icrc1 notify you when a transaction has occured.
-  private func approval_listener(trx: ICRC2.TokenApprovalNotification, trxid: Nat) : () {
-
-  };
-
   /// Uncomment this code to establish have icrc1 notify you when a transaction has occured.
-  private func transfer_from_listener(trx: ICRC2.TransferFromNotification, trxid: Nat) : () {
-
-  }; */
+ */
 
   // private stable var _init = false;
   // public shared(msg) func admin_init() : async () {
@@ -1096,7 +1098,7 @@ shared ({ caller = _owner }) actor class Token(
     log.clear();
   };
 
-  public query (msg) func get_log() : async [Text] {
+  public query func get_log() : async [Text] {
     Buffer.toArray(log);
   };
 
