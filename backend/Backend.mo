@@ -21,10 +21,9 @@ import ICRC4 "mo:icrc4-mo/ICRC4";
 import ClassPlus "mo:class-plus";
 
 ///GLDT Token
-import Types "Types";
 import Blob "mo:base/Blob";
 import Int "mo:base/Int";
-import ICPTypes "ICPTypes";
+import CkBtcLedger "CkBtcLedger";
 import Convert "Convert";
 
 shared ({ caller = _owner }) actor class Token(
@@ -60,7 +59,7 @@ shared ({ caller = _owner }) actor class Token(
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
   ]);
 
-  let Ledger : ICPTypes.Service = actor ("mxzaz-hqaaa-aaaar-qaada-cai"); // ckBTC Ledger
+  let Ledger : CkBtcLedger.Service = actor ("mxzaz-hqaaa-aaaar-qaada-cai"); // ckBTC Ledger
 
   // Conversion between raw ckBTC and raw SATS lives in Convert.mo so it can be
   // unit-tested; see backend/tests/Convert.test.mo.
@@ -225,6 +224,11 @@ shared ({ caller = _owner }) actor class Token(
 
   // NEW STABLE VARIABLES FOR ICRC UPGRADE (Phase 1)
   stable var icrc106IndexCanister : ?Principal = null;
+  // Retained deliberately. The Phase 4 methods that used these
+  // (upgrade_archives / get_upgrade_status / reset_upgrade_status) were removed:
+  // upgrade_archives only logged, set upgradeComplete := true and returned #ok
+  // without performing any archive migration. Keeping the variables leaves the
+  // stable signature unchanged by this release. They are inert.
   stable var upgradeError = "";
   stable var upgradeComplete = false;
 
@@ -534,7 +538,7 @@ shared ({ caller = _owner }) actor class Token(
           owner = caller;
           subaccount = subaccount;
         };
-        memo = ?Blob.toArray("\4d\03\4c\3e\2f\15\84\ae\3d\86\d6\70\a5\e2\7e\9b\ad\3c\14\17\a6\3c\d8\9e\9b\f9\37\01\35\8d\c3\0e" : Blob); //"sGLDT Deposit"
+        memo = ?Blob.toArray("\4d\03\4c\3e\2f\15\84\ae\3d\86\d6\70\a5\e2\7e\9b\ad\3c\14\17\a6\3c\d8\9e\9b\f9\37\01\35\8d\c3\0e" : Blob); // memo tag, inherited from the GLDT fork; the bytes are load-bearing
         created_at_time = ?time64();
         amount = amount;
       });
@@ -571,7 +575,7 @@ shared ({ caller = _owner }) actor class Token(
         };
         amount = mintingAmount; // The number of tokens to mint.
         created_at_time = ?time64();
-        memo = ?("\6d\7a\68\d6\ce\4d\2f\8e\60\72\af\e3\73\91\c8\d8\67\b5\6f\69\35\bc\ca\9a\7b\d9\40\19\fd\6e\3c\16" : Blob); //"sGLDT mint"
+        memo = ?("\6d\7a\68\d6\ce\4d\2f\8e\60\72\af\e3\73\91\c8\d8\67\b5\6f\69\35\bc\ca\9a\7b\d9\40\19\fd\6e\3c\16" : Blob); // memo tag, inherited from the GLDT fork; the bytes are load-bearing
       },
     );
 
@@ -620,7 +624,7 @@ shared ({ caller = _owner }) actor class Token(
           case (?val) ?Blob.fromArray(val);
         }; // The subaccount from which tokens are burned.
         amount = burn_amount; // whole satoshis only; the remainder stays with the caller
-        memo = ?("\d8\d9\b4\5f\41\5d\5a\c3\be\e5\21\2c\10\f4\bb\6d\07\52\7d\01\17\7e\58\e0\13\03\39\90\00\c5\a8\94" : Blob); //sGLDT Withdraw
+        memo = ?("\d8\d9\b4\5f\41\5d\5a\c3\be\e5\21\2c\10\f4\bb\6d\07\52\7d\01\17\7e\58\e0\13\03\39\90\00\c5\a8\94" : Blob); // memo tag, inherited from the GLDT fork; the bytes are load-bearing
         created_at_time = ?time64(); // The time the burn operation was created.
       },
     );
@@ -637,7 +641,7 @@ shared ({ caller = _owner }) actor class Token(
         };
         fee = null;
         from_subaccount = null;
-        memo = ?Blob.toArray("\d8\d9\b4\5f\41\5d\5a\c3\be\e5\21\2c\10\f4\bb\6d\07\52\7d\01\17\7e\58\e0\13\03\39\90\00\c5\a8\94"); //sGLDT Withdraw
+        memo = ?Blob.toArray("\d8\d9\b4\5f\41\5d\5a\c3\be\e5\21\2c\10\f4\bb\6d\07\52\7d\01\17\7e\58\e0\13\03\39\90\00\c5\a8\94"); // memo tag, inherited from the GLDT fork; the bytes are load-bearing
         created_at_time = ?time64();
         amount = gross_ckbtc - ckbtc_total_fee; // raw ckBTC out
       },
@@ -658,7 +662,7 @@ shared ({ caller = _owner }) actor class Token(
                 {
                   to = fee_collector;
                   amount = Convert.toSats(ckbtc_conversion_fee); // retained in ckBTC, minted in SATS
-                  memo = ?("\d8\d9\b4\5f\41\5d\5a\c3\be\e5\21\2c\10\f4\bb\6d\07\52\7d\01\17\7e\58\e0\13\03\39\90\00\c5\a8\94" : Blob); //sGLDT Withdraw
+                  memo = ?("\d8\d9\b4\5f\41\5d\5a\c3\be\e5\21\2c\10\f4\bb\6d\07\52\7d\01\17\7e\58\e0\13\03\39\90\00\c5\a8\94" : Blob); // memo tag, inherited from the GLDT fork; the bytes are load-bearing
                   created_at_time = ?time64(); // The time the burn operation was created.
                 },
               );
@@ -707,7 +711,7 @@ shared ({ caller = _owner }) actor class Token(
               }; // The subaccount from which tokens are burned.
             };
             amount = burn_amount; // must match exactly what was burned
-            memo = ?("\d8\d9\b4\5f\41\5d\5a\c3\be\e5\21\2c\10\f4\bb\6d\07\52\7d\01\17\7e\58\e0\13\03\39\90\00\c5\a8\94" : Blob); //sGLDT Withdraw
+            memo = ?("\d8\d9\b4\5f\41\5d\5a\c3\be\e5\21\2c\10\f4\bb\6d\07\52\7d\01\17\7e\58\e0\13\03\39\90\00\c5\a8\94" : Blob); // memo tag, inherited from the GLDT fork; the bytes are load-bearing
             created_at_time = ?time64(); // The time the burn operation was created.
           },
         );
@@ -1144,51 +1148,4 @@ shared ({ caller = _owner }) actor class Token(
     #ok(());
   };
 
-  // NEW ARCHIVE UPGRADE FUNCTIONS (Phase 4)
-  public shared({caller}) func upgrade_archives() : async Result.Result<(), Text> {
-    if (caller != owner) {
-      return #err("Unauthorized");
-    };
-    
-    if (upgradeComplete) {
-      return #err("Archive upgrade already completed");
-    };
-    
-    try {
-      log.add(debug_show (Time.now()) # " Starting archive upgrade...");
-      
-      // Get current archive stats
-      let current_stats = icrc3().stats();
-      log.add(debug_show (Time.now()) # " Current archive stats: " # debug_show(current_stats));
-      
-      // Archive upgrade functionality will be implemented in future phases
-      log.add(debug_show (Time.now()) # " Archive upgrade functionality ready");
-      
-      upgradeComplete := true;
-      log.add(debug_show (Time.now()) # " Archive upgrade completed successfully");
-      
-      #ok(());
-    } catch (error) {
-      upgradeError := "Archive upgrade failed: " # Error.message(error);
-      log.add(debug_show (Time.now()) # " " # upgradeError);
-      #err(upgradeError);
-    };
-  };
-
-  public query func get_upgrade_status() : async {upgradeComplete : Bool; upgradeError : Text} {
-    {
-      upgradeComplete = upgradeComplete;
-      upgradeError = upgradeError;
-    };
-  };
-
-  public shared({caller}) func reset_upgrade_status() : async Result.Result<(), Text> {
-    if (caller != owner) {
-      return #err("Unauthorized");
-    };
-    upgradeComplete := false;
-    upgradeError := "";
-    log.add(debug_show (Time.now()) # " Upgrade status reset");
-    #ok(());
-  };
 };
