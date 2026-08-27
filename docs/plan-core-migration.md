@@ -1,161 +1,115 @@
 # Plan: migrate to core and the 0.2.x ICRC libraries
 
-Sketch only. Nothing here is implemented.
+**Status: attempted on staging, blocked. Do not attempt as a plain upgrade.**
 
-Goal: reach the library stack `XanderBrendon/sats` uses, **without losing block
-history, holder balances, allowances or the archive**.
+An earlier draft of this document said the migration was safe because the
+library's own v1→v2 migration was implemented and the delta was a single field
+rename. That was wrong, and the attempt is what established it. This version
+records what actually happens.
 
-## The key finding: this is two migrations, not one
+## What was attempted
 
-They were originally planned as one change. They are independent, and only one
-of them carries risk.
+On branch `feat/core-migration`, against staging `5r3gp` (48 blocks, 4 holders):
 
-| | half A — libraries | half B — CLI |
-|---|---|---|
-| what moves | `base`→`core`, icrc\*-mo 0.0.x→0.2.x, `persistent actor`, moc 0.14.13→1.14.1 | `dfx.json`→`icp.yaml`, asset canister→static-site, build-time `DEPLOY_ENV`→runtime `ic_env` cookie |
-| risk | **a `v000_002_000` stable-state migration** | none to state |
-| can be done alone | **yes** | yes |
-| required | for parity with upstream | optional |
+- `mops.toml` moved to `core 2.6.1`, `icrc1/2/4-mo 0.2.1`, `icrc3-mo 0.4.3`,
+  `class-plus 0.2.1`, `timer-tool 0.2.1`; `base` and `devefi-icrc-ledger`
+  retained for `ntn/ntntest.mo`.
+- `ic-mops` upgraded 0.39.2 → 3.1.0; the old CLI cannot read `[toolchain]`.
+- `Backend.mo` ported, using upstream's already-ported file as the base and
+  re-applying the fixes it lacks.
+- Built through **dfx** with `DFX_MOC_PATH` pointing at the mops-managed
+  moc 1.14.1.
 
-**dfx can build the new stack.** This was tested, not assumed: upstream's tree —
-`core 2.6.1`, `icrc*-mo 0.2.x`, `persistent actor class`, no `icrc-fungible` —
-was built with `dfx build` and produced a wasm. The only change needed was one
-environment variable.
+**The port compiles.** `dfx build` produces a wasm, and its Candid interface is
+identical to the deployed one: 52 methods, none added, none removed.
 
-```bash
-DFX_MOC_PATH=$HOME/.cache/mops/moc/1.14.1/moc dfx build --network ic backend
+**The upgrade is refused.** Three times, for three different reasons, and the
+canister was never written to — all five fixture files were byte-identical
+before and after.
+
+## The blocker
+
+```
+stable variable `icrc1_migration_state` is not compatible with the previous version
+
+  [var ?(keys, values, indexes, bounds)]              <- mo:map 9.x, icrc1-mo 0.0.16
+is not compatible with
+  {var root : Node<Account, Balance>; var size : Nat} <- mo:core,   icrc1-mo 0.2.1
+
+in `Map` ... in `accounts` in `State`
 ```
 
-The real coupling is compiler-to-library, not dfx-to-library:
+The account map's underlying data structure changed: an array-based hash map
+became a tree. The same applies to the icrc2, icrc3 and icrc4 states.
 
-| | moc 0.14.13 (dfx 0.28.0's own) | moc 1.14.1 (mops-managed) |
-|---|---|---|
-| icrc3-mo **0.3.5** (ours) | builds | fails M0219 |
-| icrc3-mo **0.4.3** (upstream) | fails | builds |
+**Why the earlier reasoning failed.** The libraries do ship a `v0_1_0.upgrade →
+v0_2_0.upgrade` chain, and within 0.2.1 that delta really is one field rename.
+But Motoko's stable-signature compatibility check runs **before** any library
+migration code executes. The upgrade is rejected at the type level, so the
+chain never runs. Checking the migration functions was checking the wrong thing;
+what matters is whether the *stable types* are structurally compatible, and the
+`Map` swap between 0.0.16 and 0.2.1 means they are not.
 
-That is also why dfx 0.31.0 cannot build this project today — a newer bundled
-compiler meeting an older library, not a dfx defect.
+## Two findings worth keeping regardless
 
-So half A can be taken while keeping `dfx.json`, `dfx deploy`,
-`canister_ids.json` and the asset canister exactly as they are. Half B becomes a
-separate decision, judged on its own merits.
+**This ledger has two ICRC-3 state variables.**
 
-`dfx.json` has no field for the compiler path — only `args` for extra moc
-flags — so `DFX_MOC_PATH` has to be an environment variable. Put it in the npm
-build scripts, never in a runbook step someone can forget: a build with the
-wrong compiler fails loudly (M0219), but the failure looks like a broken
-project rather than a missing variable, which is exactly the confusion that
-cost time earlier.
+```motoko
+stable let icrc3_migration_state = ICRC3.initialState();       // legacy, unused
+stable var icrc3_migration_state_new = icrc3_migration_state;  // wired to the class
+```
 
----
+`icrc3_migration_state_new` is the one passed as `initialState` and written by
+`onStorageChange`, so **it holds every block**. Upstream's file has only the
+first name. A port based on his file discards the second — and with it the
+entire block history. M0169 refused it, but anything that bypassed the check
+would have destroyed the ledger's history silently.
 
-# Half A — libraries and compiler
+**`total_deposit_fees` is dead but undroppable.** Never incremented — `deposit`
+tracks `total_ledger_fees` instead — but it exists on the deployed canister, and
+removing a stable variable is itself a compatibility break.
 
-## The state that must survive
+Both are reasons to be wary of any port that starts from upstream's file: it was
+written for a canister that has never carried this one's history.
 
-| | production `4fu6t` | staging `5r3gp` |
-|---|---|---|
-| blocks | 42 | 48 |
-| holders | 5 | 4 |
-| separate archive canister | **none** | **none** |
-| stable declarations | 20 | 20 |
+## Options, in the order I would consider them
 
-**Neither canister has spawned a separate archive canister.**
-`icrc3_get_archives` returns a single entry that is the ledger itself. There is
-nothing to migrate but the ledger's own state.
+**1. Do not migrate.** The 0.0.x libraries work. Everything gained today —
+the fee routing, the memos, the refund and deposit error paths, the ICRC-103
+correction — was achieved on them. The migration buys toolchain modernity and
+parity with upstream, not correctness. This is the cheapest correct answer and
+should be the default until something forces the issue.
 
-That is the argument for doing this **now**. Once block volume crosses the
-archive threshold, a separate archive canister spawns running old library code,
-and the problem becomes the one the sibling GLDT ledger has — 38,043 blocks in
-an archive on `icrc3-mo` 0.2.6, which is genuinely unsolved.
+**2. Explicit migration functions.** Motoko supports
+`(with migration = func (old : OldState) : NewState { ... })`. It would have to
+name the old `mo:map` representation, walk it, and rebuild each `mo:core` Map —
+for icrc1, icrc2, icrc3 and icrc4. Substantial, and the failure mode is silent
+data corruption rather than a refused upgrade. If taken, it needs its own
+fixtures, its own rehearsal, and a way to verify every account balance and every
+block survived.
 
-## The risk
+**3. Reinstall and replay.** Wipe, re-mint balances from a snapshot. Loses the
+block history, which was the thing worth protecting. Only viable while the
+ledger is small — and it is small *now* (production 42 blocks, 5 holders), which
+is the one argument for doing it soon rather than later.
 
-`icrc1-mo` 0.2.1 and `icrc3-mo` 0.4.3 each add a `v000_002_000` migration, so
-the stored schema changes. From reading the libraries:
+**4. Wait.** If a future `icrc*-mo` ships a migration path from 0.0.x, this
+becomes routine. Worth asking upstream before building option 2.
 
-- the migration is implemented, not a stub: `upgrades = [v0_1_0.upgrade,
-  v0_2_0.upgrade]`, with a `migrate` that walks the chain by index;
-- the v1 → v2 delta is a single field rename, `icrc85` →
-  `var org_icdevs_ovs_fixed_state`.
+## What is reusable
 
-Designed to work. Never run against a ledger holding balances.
+- `scratchpad/fixtures.sh` captures a ledger's full observable state — every
+  block, every holder, all scalars and metadata — into a diffable directory. It
+  is what proved staging was untouched, and it is the instrument any of options
+  2 or 3 would need.
+- The ported `Backend.mo` on `feat/core-migration`, with all our fixes
+  re-applied and the two stable variables above restored. **Unpushed.** It
+  compiles and its interface matches; only the state transition is unsolved.
 
-**Point of no return:** once v2 state is written the old module cannot read it.
-Everything before the production upgrade is reversible; that step is not.
+## Half B is unaffected
 
-## Sequence
-
-**Phase 0 — make current state reproducible**
-1. Snapshot production: every block, every holder, all 20 stable values. Store
-   as fixtures.
-2. Write a script that diffs a live canister against a fixture set. Build this
-   first — it is the instrument for every later phase.
-
-**Phase 1 — port, unreleased**
-3. Branch. Port `Backend.mo` to `core` and the 0.2.x libraries, using upstream's
-   file as the worked example.
-4. **Re-apply the four fixes upstream lacks**: the minting subaccount, the
-   deposit mint caller, the withdraw re-mint caller, and the fee collector
-   pointing at the canister's own account. A port that starts from his file
-   silently loses all four.
-5. Keep the three `let #v0_1_0(#data(_)) = ..._migration_state` assertions.
-   Upstream deletes them; they are what traps if the state version is not what
-   the code expects — precisely the failure this phase risks.
-6. Add `DFX_MOC_PATH` to the npm build scripts. Confirm the Candid delta is
-   additive.
-
-**Phase 2 — rehearse on staging, with state**
-7. Give staging real state first: several holders, a spread of block types, a
-   non-trivial block count. An empty ledger does not exercise a migration.
-8. Capture fixtures.
-9. Upgrade staging. Diff against fixtures: every block, every holder balance,
-   every stable value.
-10. Exercise wrap, unwrap, transfer, approve, fee collection. Confirm the
-    invariant, and that block numbering continues rather than restarting.
-
-**Phase 3 — production**
-11. Cycles check. An upgrade can fail at install for want of cycles while the
-    canister reports Running.
-12. Capture production fixtures immediately before.
-13. Upgrade. Diff against fixtures.
-14. Wrap and unwrap for real, smallest viable amount.
-
-## Notes
-
-- Do not bundle half A with anything: no behavioural change, no new endpoint, no
-  half B, in the same release.
-- `timer-tool` appears in upstream's dependencies but nothing beyond its own
-  initialisation uses it. Do not adopt it without a reason.
-- `upgradeError` / `upgradeComplete` are retained here deliberately and must be
-  carried across, or the stable signature changes on top of everything else.
-
----
-
-# Half B — CLI and deployment
-
-Independent of half A, and safe to defer indefinitely.
-
-**What it buys.** The `ic_env` cookie serves each deployment its own canister
-IDs, so one bundle is correct everywhere and the build-time staging/production
-switch disappears. That switch is what caused Rivver F1 (staging frontend
-driving the production backend) and F7 (`dfx deploy` silently shipping the
-wrong-environment bundle). Adopting it removes that class of bug rather than
-mitigating it.
-
-**What it costs.** `icp.yaml` replaces `dfx.json`, the frontend canister type
-changes, and every deploy path and runbook changes with it.
-
-**The natural trigger.** There is no SATS production frontend canister —
-`canister_ids.json` has `frontend` as local-only. Creating one is the moment to
-decide, because starting on the static-site recipe is free whereas migrating an
-existing asset canister later is not.
-
-**Sequence, if taken**
-1. Add `icp.yaml` alongside `dfx.json`; confirm both produce the same wasm hash
-   (they should — the toolchain is pinned in `mops.toml`, not by the CLI).
-2. Create the production frontend canister on the static-site recipe.
-3. Move staging's frontend across; verify by fetching the live bundle, not by
-   comparing module hashes — asset canisters hash identically regardless of
-   contents, which is the F7 trap.
-4. Retire `dfx.json` only once `icp` has deployed both canisters successfully.
+`icp.yaml`, the static-site frontend canister and the `ic_env` cookie touch no
+stable state and remain available independently. `DFX_MOC_PATH` was proven to
+work — dfx built upstream's `core` tree — so the CLI was never the obstacle.
+The obstacle is the ledger libraries' stable representation, and that would
+block the migration under `icp` exactly as it does under `dfx`.
