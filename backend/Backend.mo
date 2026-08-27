@@ -623,7 +623,13 @@ shared ({ caller = _owner }) actor class Token(
     let burn_amount = Convert.burnable(amount);
 
     if (gross_ckbtc <= ckbtc_total_fee) {
-      return #err("amount too low - must exceed " # debug_show (ckbtc_total_fee) # " SATS to cover fees");
+      // ckbtc_total_fee is in raw ckBTC; `amount` is in raw SATS, and the two
+      // differ by Convert.SCALE. Quote the threshold in the caller's own units
+      // or it reads 1e8 times too small.
+      return #err(
+        "amount too low - must exceed " # debug_show (Convert.toSats(ckbtc_total_fee))
+        # " raw SATS (" # debug_show (ckbtc_total_fee) # " raw ckBTC) to cover fees"
+      );
     };
 
     let burnResult = await* icrc1().burn(
