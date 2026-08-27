@@ -67,8 +67,18 @@ export default function App() {
       </main>
 
       <footer className={styles.footer}>
-        No warranty. You use SATS entirely at your own risk — financial loss,
-        technical failure, contract risk.
+        <p className={styles.noticeHeading}>
+          ⚠️ IMPORTANT NOTICE - NO RESPONSIBILITY DISCLAIMER ⚠️
+        </p>
+        <p className={styles.notice}>
+          BY USING THE SATS PLATFORM, YOU EXPLICITLY ACKNOWLEDGE AND AGREE THAT
+          YOU ARE USING THE PLATFORM ENTIRELY AT YOUR OWN RISK. WE ACCEPT
+          ABSOLUTELY NO RESPONSIBILITY OR LIABILITY WHATSOEVER FOR ANY
+          CONSEQUENCES RESULTING FROM YOUR USE OF THE PLATFORM. THIS INCLUDES,
+          BUT IS NOT LIMITED TO: FINANCIAL LOSSES, TECHNICAL ISSUES, SECURITY
+          BREACHES, SMART CONTRACT VULNERABILITIES, REGULATORY COMPLIANCE, OR
+          ANY OTHER POTENTIAL RISKS OR DAMAGES.
+        </p>
       </footer>
     </div>
   );

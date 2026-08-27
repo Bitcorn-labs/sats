@@ -20,6 +20,24 @@
   line-height: 1.6;
 }
 
+/* The disclaimer is set entirely in capitals, which reads as a solid block at
+   body settings. Extra letter-spacing and leading, and a measure well short of
+   the page width, keep it legible rather than shouted. */
+.noticeHeading {
+  margin: 0 0 6px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+}
+
+.notice {
+  margin: 0;
+  max-width: 72ch;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  line-height: 1.75;
+}
+
 @media (max-width: 720px) {
   .content {
     padding: 20px 16px 40px;
