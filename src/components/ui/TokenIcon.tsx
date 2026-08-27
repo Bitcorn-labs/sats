@@ -1,5 +1,9 @@
 import ckbtcIcon from '../../assets/ckbtc.svg';
-import satsIcon from '../../assets/sats_black.svg';
+// The SATS mark the production ledger publishes as icrc1:logo
+// (4fu6t-haaaa-aaaap-quxda-cai), decoded from its metadata. Using the
+// ledger's own artwork keeps this app showing the same token image as
+// wallets, explorers and aggregators, which all read it from there.
+import satsIcon from '../../assets/sats_onchain.png';
 import type { Ticker } from '../../lib/tokens';
 import styles from './TokenIcon.module.css';
 
