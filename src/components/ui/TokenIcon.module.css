@@ -1,0 +1,14 @@
+.icon {
+  display: block;
+  flex: none;
+}
+
+/* The SATS mark is a black glyph, so it always sits on an amber disc. */
+.disc {
+  border-radius: 50%;
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}

@@ -1,0 +1,300 @@
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  padding: 24px;
+  box-shadow: var(--shadow-card);
+  transition: border-color 120ms ease;
+}
+
+.cardSuccess {
+  border-color: var(--accent);
+}
+
+.cardError {
+  border-color: var(--danger-border);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.title {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* The two panels butt together so the flip control can straddle the seam. */
+.panel {
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 20px;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.panelError {
+  background: var(--danger-bg);
+  border-color: var(--danger-border);
+}
+
+.panelHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.fieldLabel {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.balance {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  min-width: 0;
+}
+
+.balanceValue {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.max {
+  all: unset;
+  padding: 3px 8px;
+  background: var(--surface-raised-hi);
+  border-radius: 5px;
+  color: var(--accent);
+  cursor: pointer;
+  flex: none;
+}
+
+.max:hover {
+  color: var(--accent-hover);
+}
+
+.panelBody {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* min-width:0 is required -- without it the flex amount field refuses to
+   shrink and pushes straight out of the card. */
+.amount,
+.receive {
+  all: unset;
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 32px;
+  font-variant-numeric: tabular-nums;
+}
+
+.amount {
+  color: var(--text);
+  caret-color: var(--accent);
+}
+
+.amountError {
+  color: var(--danger);
+}
+
+.receive {
+  color: var(--accent);
+}
+
+.flipRow {
+  padding-left: 20px;
+  margin: -10px 0;
+  position: relative;
+  z-index: 1;
+}
+
+.flip {
+  all: unset;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-on);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 700;
+  border: 4px solid var(--surface);
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: background 120ms ease;
+}
+
+.flip:hover {
+  background: var(--accent-hover);
+}
+
+.breakdown {
+  background: var(--surface-sunken);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 12.5px;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rowLabel {
+  color: var(--muted);
+}
+
+.rowValue {
+  font-family: var(--font-mono);
+  text-align: right;
+}
+
+.rowMuted {
+  color: var(--muted);
+}
+
+.divider {
+  height: 1px;
+  background: var(--border);
+}
+
+.total {
+  font-weight: 700;
+}
+
+/* Replaces the fee breakdown while a transaction is in flight. */
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 12.5px;
+  margin-top: 14px;
+}
+
+.step {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 9px 11px;
+  background: var(--surface-sunken);
+  border-radius: 8px;
+  color: var(--muted);
+}
+
+.stepDone {
+  color: var(--text);
+}
+
+.stepDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: block;
+  flex: none;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.stepDotDone {
+  animation: none;
+}
+
+.cta {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  height: 54px;
+  background: var(--accent);
+  color: var(--accent-on);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  margin-top: 16px;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.cta:hover {
+  background: var(--accent-hover);
+}
+
+.ctaDisabled,
+.ctaDisabled:hover {
+  background: var(--surface-raised);
+  color: var(--muted-2);
+  cursor: default;
+}
+
+.note {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted-2);
+  margin-top: 11px;
+  line-height: 1.5;
+}
+
+.noteDanger {
+  color: var(--danger);
+}
+
+@media (max-width: 560px) {
+  .card {
+    padding: 18px;
+  }
+
+  .amount {
+    font-size: 23px;
+  }
+
+  /* The computed value is the longer of the two, so it steps down further. */
+  .receive {
+    font-size: 19px;
+  }
+
+  .flipRow {
+    padding-left: 16px;
+    margin: -9px 0;
+  }
+
+  .flip {
+    width: 30px;
+    height: 30px;
+    font-size: 13px;
+  }
+
+  .cta {
+    height: 50px;
+  }
+}

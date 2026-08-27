@@ -1,0 +1,42 @@
+.head,
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 14px 20px;
+  font-family: var(--font-mono);
+}
+
+.head {
+  background: var(--surface-sunken);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+
+.row {
+  border-top: 1px solid var(--border-faint);
+  font-size: 12.5px;
+}
+
+.in {
+  color: var(--text-3);
+}
+
+.out {
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.accent {
+  color: var(--accent);
+}
+
+.footer {
+  padding: 14px 20px;
+  border-top: 1px solid var(--border-faint);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--muted-2);
+  line-height: 1.55;
+}

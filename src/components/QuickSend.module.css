@@ -1,0 +1,29 @@
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.link {
+  all: unset;
+  font-size: 12px;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.link:hover {
+  color: var(--accent-hover);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}

@@ -1,0 +1,21 @@
+.grid {
+  display: grid;
+  /* Both tracks must be minmax(0, ...): a fixed 620px track beside a 1fr track
+     overflows and clips the rail below the content width. */
+  grid-template-columns: minmax(0, 620px) minmax(320px, 1fr);
+  gap: var(--gutter);
+  align-items: start;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

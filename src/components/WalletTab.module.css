@@ -1,0 +1,167 @@
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 540px);
+  gap: var(--gutter);
+  align-items: start;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.title {
+  margin: 0 0 20px;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.balance {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 18px;
+  background: var(--surface-sunken);
+  border-radius: 10px;
+}
+
+.token {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.ticker {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.tokenMeta {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--muted-2);
+  margin-top: 2px;
+}
+
+.amount {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.receiveTitle {
+  margin: 0 0 6px;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.receiveBody {
+  margin: 0 0 18px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+
+.receiveRow {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.principal {
+  flex: 1;
+  min-width: 0;
+  padding: 15px 16px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--text-2);
+  word-break: break-all;
+}
+
+.copy {
+  all: unset;
+  width: 104px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-raised-hi);
+  color: var(--text);
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  flex: none;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.copy:hover {
+  background: var(--border-hover);
+}
+
+.copied,
+.copied:hover {
+  background: var(--accent);
+  color: var(--accent-on);
+}
+
+.warning {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted-2);
+  margin-top: 12px;
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* A full-precision balance cannot share a row with the token block at this
+   width without wrapping mid-number, so the row stacks instead. */
+@media (max-width: 560px) {
+  .balance {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .amount {
+    font-size: 15px;
+    text-align: left;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-wrap: normal;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 460px) {
+  .receiveRow {
+    flex-direction: column;
+  }
+
+  .copy {
+    width: 100%;
+    height: 46px;
+  }
+}

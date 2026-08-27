@@ -1,0 +1,200 @@
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  padding: 16px var(--gutter);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand {
+  all: unset;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text);
+  cursor: pointer;
+  flex: none;
+}
+
+.mark {
+  width: 32px;
+  height: 32px;
+  background: var(--accent);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+.wordmark {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.nav {
+  display: flex;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.tab {
+  all: unset;
+  padding: 7px 13px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--muted);
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.tab:hover {
+  color: var(--text-2);
+}
+
+.tabActive,
+.tabActive:hover {
+  background: var(--surface-raised);
+  color: var(--text);
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  /* Pushes the identity controls to the far edge whether or not the nav
+     (signed-in only) sits between them and the wordmark. */
+  margin-left: auto;
+}
+
+.principal {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--surface-raised);
+  border-radius: 8px;
+  min-width: 0;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  background: var(--accent);
+  border-radius: 50%;
+  display: block;
+  flex: none;
+}
+
+.principalText {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.short {
+  display: none;
+}
+
+.signOut {
+  all: unset;
+  padding: 8px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  flex: none;
+  transition: border-color 120ms ease, color 120ms ease;
+}
+
+.signOut:hover {
+  border-color: var(--border-hover);
+  color: var(--text-2);
+}
+
+.connect {
+  all: unset;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 16px;
+  background: var(--accent);
+  color: var(--accent-on);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  flex: none;
+  transition: background 120ms ease;
+}
+
+.connect:hover {
+  background: var(--accent-hover);
+}
+
+.connect[disabled] {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.connectDot {
+  width: 7px;
+  height: 7px;
+  background: var(--accent-on);
+  border-radius: 50%;
+  display: block;
+  opacity: 0.55;
+  flex: none;
+}
+
+@media (max-width: 720px) {
+  .header {
+    padding: 14px 16px;
+    gap: 16px;
+  }
+}
+
+/* Below this the wordmark, identity chip and Sign out already fill the row, so
+   the nav wraps to a full-width second line rather than colliding with them. */
+@media (max-width: 560px) {
+  .header {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .nav {
+    order: 3;
+    width: 100%;
+    gap: 6px;
+  }
+
+  .tab {
+    flex: 1;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface-sunken);
+  }
+
+  .tabActive,
+  .tabActive:hover {
+    background: var(--surface-raised);
+  }
+
+  .full {
+    display: none;
+  }
+
+  .short {
+    display: inline;
+  }
+}

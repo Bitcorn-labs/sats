@@ -1,0 +1,29 @@
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.roomy {
+  padding: 26px;
+}
+
+.flush {
+  padding: 0;
+  overflow: hidden;
+}
+
+@media (max-width: 560px) {
+  .card {
+    padding: 18px;
+  }
+
+  .roomy {
+    padding: 20px;
+  }
+
+  .flush {
+    padding: 0;
+  }
+}

@@ -1,0 +1,95 @@
+@import './../assets/fonts/fonts.css';
+
+/* The design's palette. Roughly two backgrounds -- page and card -- plus the
+   sunken/raised steps that sit between them. No gradients anywhere. */
+:root {
+  --bg: #0e0d0b;
+  --surface: #141210;
+  --surface-sunken: #1a1713;
+  --surface-raised: #221d17;
+  --surface-raised-hi: #2b2318;
+
+  --border: #241f19;
+  --border-strong: #302921;
+  --border-faint: #1c1815;
+  --border-hover: #3e362c;
+
+  --text: #f5f0e8;
+  --text-2: #d4ccbe;
+  --text-3: #b4ab9c;
+  --muted: #948c7e;
+  --muted-2: #6f6659;
+
+  --accent: #e8912f;
+  --accent-hover: #f2a64b;
+  --accent-on: #17130e;
+
+  --danger: #e8734a;
+  --danger-border: #7a3a22;
+  --danger-bg: #1f1512;
+
+  /* Archivo and Space Mono cover latin/latin-ext only; the arrow glyphs the
+     design uses (⇅ ↗) fall outside every subset Google publishes for them, so
+     the stacks end in families that carry them. */
+  --font-display: 'Archivo', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'Space Mono', ui-monospace, SFMono-Regular, Menlo, Consolas,
+    monospace;
+
+  --shadow-card: 0 24px 60px rgb(0 0 0 / 45%);
+
+  --gutter: 28px;
+  --content: 1180px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-display);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--accent-hover);
+}
+
+input::placeholder {
+  color: var(--muted-2);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

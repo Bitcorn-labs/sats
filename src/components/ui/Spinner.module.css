@@ -1,0 +1,21 @@
+.spinner {
+  display: block;
+  border-radius: 50%;
+  border-style: solid;
+  animation: spin 0.9s linear infinite;
+  flex: none;
+}
+
+/* On the amber CTA. */
+.onAccent {
+  border-color: rgb(23 19 14 / 35%);
+  border-top-color: var(--accent-on);
+}
+
+/* On a dark surface. The design specifies the on-amber ring for the pending
+   CTA, but that CTA renders on --surface-raised, where an almost-black ring is
+   invisible; the accent head keeps it legible at the same weight. */
+.onDark {
+  border-color: var(--border-strong);
+  border-top-color: var(--accent);
+}

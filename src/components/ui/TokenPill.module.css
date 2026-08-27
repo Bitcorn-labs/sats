@@ -1,0 +1,14 @@
+.pill {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 12px 8px 8px;
+  background: var(--surface-raised);
+  border-radius: 999px;
+  flex: none;
+}
+
+.ticker {
+  font-size: 14px;
+  font-weight: 600;
+}

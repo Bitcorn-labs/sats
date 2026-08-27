@@ -1,0 +1,31 @@
+.title {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 12.5px;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.label {
+  color: var(--muted);
+}
+
+.value {
+  font-family: var(--font-mono);
+  text-align: right;
+}
+
+.accent {
+  color: var(--accent);
+}

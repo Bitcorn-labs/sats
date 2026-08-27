@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  body { margin:0; background:#0E0D0B; }
+  a { color:#E8912F; text-decoration:none; }
+  a:hover { color:#F2A64B; }
+  input::placeholder { color:#6F6659; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes pulse { 0%,100% { opacity:.35 } 50% { opacity:1 } }
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:#0E0D0B;color:#F5F0E8;font-family:'Archivo',system-ui,sans-serif;">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 28px;background:#141210;border-bottom:1px solid #241F19;position:sticky;top:0;z-index:5;">
+    <div style="display:flex;align-items:center;gap:30px;">
+      <div onClick="{{ goSwap }}" style="display:flex;align-items:center;gap:10px;color:#F5F0E8;cursor:pointer;">
+        <span style="width:32px;height:32px;background:#E8912F;border-radius:6px;display:flex;align-items:center;justify-content:center;"><img src="assets/sats_black.svg" alt="SATS" style="width:24px;height:24px;display:block;"></span>
+        <span style="font-size:16px;font-weight:800;letter-spacing:-0.01em;">Sats</span>
+      </div>
+      <sc-if value="{{ connected }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;gap:4px;font-size:13px;font-weight:500;">
+        <div onClick="{{ goSwap }}" style="padding:7px 13px;border-radius:6px;cursor:pointer;background:{{ swapTabBg }};color:{{ swapTabColor }};">Swap</div>
+        <div onClick="{{ goWallet }}" style="padding:7px 13px;border-radius:6px;cursor:pointer;background:{{ walletTabBg }};color:{{ walletTabColor }};">Wallet</div>
+        <div onClick="{{ goActivity }}" style="padding:7px 13px;border-radius:6px;cursor:pointer;background:{{ activityTabBg }};color:{{ activityTabColor }};">Activity</div>
+      </div>
+      </sc-if>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <sc-if value="{{ connected }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#221D17;border-radius:8px;">
+          <span style="width:7px;height:7px;background:#E8912F;border-radius:50%;display:block;"></span>
+          <span style="font-family:'Space Mono',monospace;font-size:12px;color:#D4CCBE;">hqbg2-ryaaa…4ae-cai</span>
+        </div>
+        <div onClick="{{ disconnect }}" style="padding:8px 12px;border:1px solid #302921;border-radius:8px;font-size:12px;color:#948C7E;cursor:pointer;" style-hover="border-color:#3E362C;color:#D4CCBE;">Sign out</div>
+      </div>
+      </sc-if>
+      <sc-if value="{{ disconnected }}" hint-placeholder-val="{{ true }}">
+      <div onClick="{{ connect }}" style="display:flex;align-items:center;gap:9px;padding:10px 16px;background:#E8912F;color:#17130E;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">
+        <span style="width:7px;height:7px;background:#17130E;border-radius:50%;display:block;opacity:.55;"></span>
+        <span>Connect Internet Identity</span>
+      </div>
+      </sc-if>
+    </div>
+  </div>
+
+  <!-- ================= SWAP ================= -->
+  <sc-if value="{{ onSwap }}" hint-placeholder-val="{{ true }}">
+  <div style="max-width:1180px;margin:0 auto;padding:28px 28px 56px;display:flex;flex-direction:column;gap:24px;">
+
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#241F19;border:1px solid #241F19;border-radius:10px;overflow:hidden;">
+      <div style="background:#141210;padding:14px 18px;">
+        <div style="font-family:'Space Mono',monospace;font-size:9.5px;letter-spacing:.12em;color:#948C7E;margin-bottom:7px;">CKBTC IN VAULT</div>
+        <div style="font-family:'Space Mono',monospace;font-size:16px;font-variant-numeric:tabular-nums;">12.48310250</div>
+      </div>
+      <div style="background:#141210;padding:14px 18px;">
+        <div style="font-family:'Space Mono',monospace;font-size:9.5px;letter-spacing:.12em;color:#948C7E;margin-bottom:7px;">SATS SUPPLY</div>
+        <div style="font-family:'Space Mono',monospace;font-size:16px;font-variant-numeric:tabular-nums;">1,248,310,250</div>
+      </div>
+      <div style="background:#141210;padding:14px 18px;">
+        <div style="font-family:'Space Mono',monospace;font-size:9.5px;letter-spacing:.12em;color:#948C7E;margin-bottom:7px;">HOLDERS</div>
+        <div style="font-family:'Space Mono',monospace;font-size:16px;font-variant-numeric:tabular-nums;">3,417</div>
+      </div>
+      <div style="background:#141210;padding:14px 18px;">
+        <div style="font-family:'Space Mono',monospace;font-size:9.5px;letter-spacing:.12em;color:#948C7E;margin-bottom:7px;">BACKING</div>
+        <div style="font-family:'Space Mono',monospace;font-size:16px;color:#E8912F;">1:100,000,000</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:minmax(0,620px) minmax(320px,1fr);gap:28px;align-items:start;">
+    <div style="display:flex;flex-direction:column;gap:20px;">
+      <div style="background:#141210;border:1px solid #302921;border-radius:14px;padding:24px;box-shadow:0 24px 60px rgba(0,0,0,.45);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+          <h2 style="margin:0;font-size:19px;font-weight:700;letter-spacing:-0.01em;">{{ modeTitle }}</h2>
+          <div style="display:flex;background:#221D17;border-radius:8px;padding:3px;font-size:12px;font-weight:600;">
+            <div onClick="{{ setWrap }}" style="padding:6px 14px;border-radius:6px;cursor:pointer;background:{{ wrapPillBg }};color:{{ wrapPillColor }};">Wrap</div>
+            <div onClick="{{ setUnwrap }}" style="padding:6px 14px;border-radius:6px;cursor:pointer;background:{{ unwrapPillBg }};color:{{ unwrapPillColor }};">Unwrap</div>
+          </div>
+        </div>
+
+        <sc-if value="{{ isWrap }}" hint-placeholder-val="{{ true }}">
+          <div>
+            <div style="background:#1A1713;border:1px solid #241F19;border-radius:12px;padding:18px 20px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+                <span style="font-size:12px;color:#948C7E;">You pay</span>
+                <div style="display:flex;align-items:center;gap:8px;font-family:'Space Mono',monospace;font-size:11px;color:#948C7E;">
+                  <span>{{ payBalance }}</span>
+                  <sc-if value="{{ connected }}" hint-placeholder-val="{{ false }}">
+                    <span onClick="{{ maxCkbtc }}" style="padding:3px 8px;background:#2B2318;border-radius:5px;color:#E8912F;cursor:pointer;">MAX</span>
+                  </sc-if>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:14px;">
+                <div style="display:flex;align-items:center;gap:9px;padding:8px 12px 8px 8px;background:#221D17;border-radius:999px;">
+                  <img src="assets/ckbtc.png" alt="ckBTC" style="width:24px;height:24px;display:block;">
+                  <span style="font-size:14px;font-weight:600;">ckBTC</span>
+                </div>
+                <input value="{{ amount }}" onChange="{{ onAmount }}" inputMode="decimal" style="all:unset;flex:1;min-width:0;width:100%;box-sizing:border-box;text-align:right;font-family:'Space Mono',monospace;font-size:32px;color:#F5F0E8;font-variant-numeric:tabular-nums;caret-color:#E8912F;">
+              </div>
+            </div>
+
+            <div style="padding-left:20px;margin:-10px 0;position:relative;z-index:1;">
+              <span onClick="{{ flip }}" style="width:34px;height:34px;border-radius:50%;background:#E8912F;color:#17130E;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;border:4px solid #141210;cursor:pointer;">⇅</span>
+            </div>
+
+            <div style="background:#1A1713;border:1px solid #241F19;border-radius:12px;padding:18px 20px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+                <span style="font-size:12px;color:#948C7E;">You receive</span>
+                <span style="font-family:'Space Mono',monospace;font-size:11px;color:#948C7E;">{{ receiveBalance }}</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:14px;">
+                <div style="display:flex;align-items:center;gap:9px;padding:8px 12px 8px 8px;background:#221D17;border-radius:999px;">
+                  <span style="width:24px;height:24px;border-radius:50%;background:#E8912F;display:flex;align-items:center;justify-content:center;"><img src="assets/sats_black.svg" alt="SATS" style="width:18px;height:18px;display:block;"></span>
+                  <span style="font-size:14px;font-weight:600;">SATS</span>
+                </div>
+                <span style="flex:1;min-width:0;text-align:right;font-family:'Space Mono',monospace;font-size:32px;color:#E8912F;font-variant-numeric:tabular-nums;">{{ receive }}</span>
+              </div>
+            </div>
+
+            <div style="background:#1A1713;border-radius:12px;padding:16px 20px;margin-top:14px;display:flex;flex-direction:column;gap:10px;font-size:12.5px;">
+              <div style="display:flex;justify-content:space-between;"><span style="color:#948C7E;">Rate</span><span style="font-family:'Space Mono',monospace;">1 sat = 1.00000000 SATS</span></div>
+              <div style="display:flex;justify-content:space-between;"><span style="color:#948C7E;">Ledger fees ×2</span><span style="font-family:'Space Mono',monospace;">0.00000020 ckBTC</span></div>
+              <div style="display:flex;justify-content:space-between;"><span style="color:#948C7E;">Protocol fee</span><span style="font-family:'Space Mono',monospace;color:#948C7E;">None</span></div>
+              <div style="height:1px;background:#241F19;"></div>
+              <div style="display:flex;justify-content:space-between;font-weight:700;"><span>Total debited</span><span style="font-family:'Space Mono',monospace;">{{ total }}</span></div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isUnwrap }}" hint-placeholder-val="{{ false }}">
+          <div>
+            <div style="background:#1A1713;border:1px solid #241F19;border-radius:12px;padding:18px 20px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+                <span style="font-size:12px;color:#948C7E;">You pay</span>
+                <div style="display:flex;align-items:center;gap:8px;font-family:'Space Mono',monospace;font-size:11px;color:#948C7E;">
+                  <span>{{ payBalance }}</span>
+                  <sc-if value="{{ connected }}" hint-placeholder-val="{{ false }}">
+                    <span onClick="{{ maxSats }}" style="padding:3px 8px;background:#2B2318;border-radius:5px;color:#E8912F;cursor:pointer;">MAX</span>
+                  </sc-if>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:14px;">
+                <div style="display:flex;align-items:center;gap:9px;padding:8px 12px 8px 8px;background:#221D17;border-radius:999px;">
+                  <span style="width:24px;height:24px;border-radius:50%;background:#E8912F;display:flex;align-items:center;justify-content:center;"><img src="assets/sats_black.svg" alt="SATS" style="width:18px;height:18px;display:block;"></span>
+                  <span style="font-size:14px;font-weight:600;">SATS</span>
+                </div>
+                <input value="{{ amount }}" onChange="{{ onAmount }}" inputMode="decimal" style="all:unset;flex:1;min-width:0;width:100%;box-sizing:border-box;text-align:right;font-family:'Space Mono',monospace;font-size:32px;color:#F5F0E8;font-variant-numeric:tabular-nums;caret-color:#E8912F;">
+              </div>
+            </div>
+
+            <div style="padding-left:20px;margin:-10px 0;position:relative;z-index:1;">
+              <span onClick="{{ flip }}" style="width:34px;height:34px;border-radius:50%;background:#E8912F;color:#17130E;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;border:4px solid #141210;cursor:pointer;">⇅</span>
+            </div>
+
+            <div style="background:#1A1713;border:1px solid #241F19;border-radius:12px;padding:18px 20px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+                <span style="font-size:12px;color:#948C7E;">You receive</span>
+                <span style="font-family:'Space Mono',monospace;font-size:11px;color:#948C7E;">{{ receiveBalance }}</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:14px;">
+                <div style="display:flex;align-items:center;gap:9px;padding:8px 12px 8px 8px;background:#221D17;border-radius:999px;">
+                  <img src="assets/ckbtc.png" alt="ckBTC" style="width:24px;height:24px;display:block;">
+                  <span style="font-size:14px;font-weight:600;">ckBTC</span>
+                </div>
+                <span style="flex:1;min-width:0;text-align:right;font-family:'Space Mono',monospace;font-size:32px;color:#E8912F;font-variant-numeric:tabular-nums;">{{ receive }}</span>
+              </div>
+            </div>
+
+            <div style="background:#1A1713;border-radius:12px;padding:16px 20px;margin-top:14px;display:flex;flex-direction:column;gap:10px;font-size:12.5px;">
+              <div style="display:flex;justify-content:space-between;"><span style="color:#948C7E;">Rate</span><span style="font-family:'Space Mono',monospace;">1.00000000 SATS = 1 sat</span></div>
+              <div style="display:flex;justify-content:space-between;"><span style="color:#948C7E;">ckBTC network fee</span><span style="font-family:'Space Mono',monospace;">10 sats</span></div>
+              <div style="display:flex;justify-content:space-between;"><span style="color:#948C7E;">Protocol fee</span><span style="font-family:'Space Mono',monospace;">5 sats</span></div>
+              <div style="height:1px;background:#241F19;"></div>
+              <div style="display:flex;justify-content:space-between;font-weight:700;"><span>Total burned</span><span style="font-family:'Space Mono',monospace;">{{ total }}</span></div>
+            </div>
+          </div>
+        </sc-if>
+
+        <div onClick="{{ submit }}" style="height:54px;background:{{ ctaBg }};color:{{ ctaColor }};border-radius:10px;display:flex;align-items:center;justify-content:center;gap:10px;font-size:15px;font-weight:700;margin-top:16px;cursor:pointer;">
+          <sc-if value="{{ pending }}" hint-placeholder-val="{{ false }}">
+            <span style="width:14px;height:14px;border:2px solid rgba(23,19,14,.35);border-top-color:#17130E;border-radius:50%;display:block;animation:spin 0.9s linear infinite;"></span>
+          </sc-if>
+          <span>{{ ctaLabel }}</span>
+        </div>
+        <div style="text-align:center;font-family:'Space Mono',monospace;font-size:11px;color:{{ noteColor }};margin-top:11px;">{{ note }}</div>
+      </div>
+
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:20px;">
+      <sc-if value="{{ connected }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:20px;">
+        <div style="background:#141210;border:1px solid #241F19;border-radius:12px;padding:24px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+            <span style="font-size:15px;font-weight:700;">Activity</span>
+            <span onClick="{{ goActivity }}" style="font-family:'Space Mono',monospace;font-size:11px;color:#E8912F;cursor:pointer;">ALL ↗</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:2px;">
+            <sc-for list="{{ recentActivity }}" as="row" hint-placeholder-count="3">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 12px;background:#1A1713;border-radius:8px;">
+                <div style="display:flex;align-items:center;gap:11px;">
+                  <span style="width:26px;height:26px;border-radius:50%;background:#221D17;color:#948C7E;display:flex;align-items:center;justify-content:center;font-size:12px;">{{ row.glyph }}</span>
+                  <div>
+                    <div style="font-size:13px;font-weight:500;">{{ row.kind }}</div>
+                    <div style="font-family:'Space Mono',monospace;font-size:10.5px;color:#6F6659;">{{ row.meta }}</div>
+                  </div>
+                </div>
+                <span style="font-family:'Space Mono',monospace;font-size:12.5px;color:{{ row.color }};">{{ row.delta }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="background:#141210;border:1px solid #241F19;border-radius:12px;padding:24px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+            <span style="font-size:15px;font-weight:700;">Send SATS</span>
+            <span onClick="{{ goWallet }}" style="font-size:12px;color:#E8912F;cursor:pointer;">Receive ↗</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <input placeholder="Recipient principal" style="all:unset;box-sizing:border-box;width:100%;padding:14px 16px;background:#1A1713;border:1px solid #241F19;border-radius:10px;font-family:'Space Mono',monospace;font-size:12px;color:#F5F0E8;">
+            <div style="display:flex;gap:10px;">
+              <input placeholder="0.00000000" style="all:unset;box-sizing:border-box;flex:1;min-width:0;padding:14px 16px;background:#1A1713;border:1px solid #241F19;border-radius:10px;font-family:'Space Mono',monospace;font-size:12px;color:#F5F0E8;">
+              <div style="width:64px;display:flex;align-items:center;justify-content:center;background:#221D17;border-radius:10px;font-family:'Space Mono',monospace;font-size:11px;color:#E8912F;cursor:pointer;">MAX</div>
+              <div style="width:88px;display:flex;align-items:center;justify-content:center;background:#2B2318;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;">Send</div>
+            </div>
+            <div style="font-family:'Space Mono',monospace;font-size:11px;color:#6F6659;">FEE 0.000001 SATS · REMAINING 4,213,769.99</div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ disconnected }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;flex-direction:column;gap:20px;">
+        <div style="background:#141210;border:1px solid #241F19;border-radius:12px;overflow:hidden;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;padding:14px 20px;background:#1A1713;font-family:'Space Mono',monospace;font-size:9.5px;letter-spacing:.12em;color:#948C7E;">
+            <span>CKBTC IN</span><span style="text-align:right;">SATS OUT</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;padding:14px 20px;border-top:1px solid #1C1815;font-family:'Space Mono',monospace;font-size:12.5px;">
+            <span style="color:#B4AB9C;">0.00001000</span><span style="text-align:right;">1,000.00000000</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;padding:14px 20px;border-top:1px solid #1C1815;font-family:'Space Mono',monospace;font-size:12.5px;">
+            <span style="color:#B4AB9C;">0.00010000</span><span style="text-align:right;">10,000.00000000</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;padding:14px 20px;border-top:1px solid #1C1815;font-family:'Space Mono',monospace;font-size:12.5px;">
+            <span style="color:#B4AB9C;">1.00000000</span><span style="text-align:right;color:#E8912F;">100,000,000.00000000</span>
+          </div>
+          <div style="padding:14px 20px;border-top:1px solid #1C1815;font-family:'Space Mono',monospace;font-size:10.5px;color:#6F6659;line-height:1.55;">MIN WRAP 0.00001 CKBTC · MIN UNWRAP 16 SATS · WITHDRAWALS FLOOR TO WHOLE SATOSHIS</div>
+        </div>
+
+        <div style="background:#141210;border:1px solid #241F19;border-radius:12px;padding:24px;">
+          <div style="font-size:15px;font-weight:700;margin-bottom:14px;">Fees</div>
+          <div style="display:flex;flex-direction:column;gap:10px;font-size:12.5px;">
+            <div style="display:flex;justify-content:space-between;"><span style="color:#948C7E;">Wrap</span><span style="font-family:'Space Mono',monospace;">20 raw ckBTC</span></div>
+            <div style="display:flex;justify-content:space-between;"><span style="color:#948C7E;">Unwrap</span><span style="font-family:'Space Mono',monospace;">15 raw ckBTC</span></div>
+            <div style="display:flex;justify-content:space-between;"><span style="color:#948C7E;">SATS transfer</span><span style="font-family:'Space Mono',monospace;color:#E8912F;">0.000001 SATS</span></div>
+            <div style="display:flex;justify-content:space-between;"><span style="color:#948C7E;">ckBTC transfer</span><span style="font-family:'Space Mono',monospace;">10 sats</span></div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+    </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ================= WALLET ================= -->
+  <sc-if value="{{ onWallet }}" hint-placeholder-val="{{ false }}">
+  <div style="max-width:1180px;margin:0 auto;padding:28px 28px 56px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,540px);gap:28px;align-items:start;">
+    <div style="display:flex;flex-direction:column;gap:20px;">
+      <div style="background:#141210;border:1px solid #241F19;border-radius:12px;padding:26px;">
+        <h2 style="margin:0 0 20px;font-size:19px;font-weight:700;letter-spacing:-0.01em;">Balances</h2>
+        <div style="display:flex;flex-direction:column;gap:2px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px;background:#1A1713;border-radius:10px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <img src="assets/ckbtc.png" alt="ckBTC" style="width:32px;height:32px;display:block;">
+              <div><div style="font-size:14px;font-weight:600;">ckBTC</div><div style="font-family:'Space Mono',monospace;font-size:10.5px;color:#6F6659;">FEE 10 SATS · 8 DECIMALS</div></div>
+            </div>
+            <span style="font-family:'Space Mono',monospace;font-size:18px;font-variant-numeric:tabular-nums;">0.04213770</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px;background:#1A1713;border-radius:10px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <span style="width:32px;height:32px;border-radius:50%;background:#E8912F;display:flex;align-items:center;justify-content:center;"><img src="assets/sats_black.svg" alt="SATS" style="width:24px;height:24px;display:block;"></span>
+              <div><div style="font-size:14px;font-weight:600;">SATS</div><div style="font-family:'Space Mono',monospace;font-size:10.5px;color:#6F6659;">FEE 0.000001 · 8 DECIMALS</div></div>
+            </div>
+            <span style="font-family:'Space Mono',monospace;font-size:18px;font-variant-numeric:tabular-nums;">4,213,770.00000000</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:#141210;border:1px solid #241F19;border-radius:12px;padding:26px;">
+        <h2 style="margin:0 0 6px;font-size:19px;font-weight:700;letter-spacing:-0.01em;">Receive</h2>
+        <p style="margin:0 0 18px;font-size:13px;line-height:1.6;color:#948C7E;">Both tokens arrive at the same principal. There is no separate deposit address.</p>
+        <div style="display:flex;gap:10px;align-items:stretch;">
+          <div style="flex:1;min-width:0;padding:15px 16px;background:#1A1713;border:1px solid #241F19;border-radius:10px;font-family:'Space Mono',monospace;font-size:12.5px;color:#D4CCBE;word-break:break-all;">hqbg2-ryaaa-aaaar-qaaba-4ae-cai</div>
+          <div onClick="{{ copy }}" style="width:104px;display:flex;align-items:center;justify-content:center;background:{{ copyBg }};color:{{ copyColor }};border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;">{{ copyLabel }}</div>
+        </div>
+        <div style="font-family:'Space Mono',monospace;font-size:11px;color:#6F6659;margin-top:12px;line-height:1.5;">NEVER SEND TO THE SATS CANISTER ID — A TRANSFER TO THE MINTING ACCOUNT IS A BURN. UNWRAP INSTEAD.</div>
+      </div>
+    </div>
+
+    <div style="background:#141210;border:1px solid #302921;border-radius:14px;padding:24px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+        <h2 style="margin:0;font-size:19px;font-weight:700;letter-spacing:-0.01em;">Send</h2>
+        <div style="display:flex;background:#221D17;border-radius:8px;padding:3px;font-size:12px;font-weight:600;">
+          <span style="padding:6px 14px;background:#E8912F;color:#17130E;border-radius:6px;">SATS</span>
+          <span style="padding:6px 14px;color:#948C7E;">ckBTC</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div>
+          <div style="font-size:12px;color:#948C7E;margin-bottom:8px;">To principal</div>
+          <input placeholder="ryjl3-tyaaa-aaaaa-aaaba-cai" style="all:unset;box-sizing:border-box;width:100%;padding:15px 16px;background:#1A1713;border:1px solid #241F19;border-radius:10px;font-family:'Space Mono',monospace;font-size:12.5px;color:#F5F0E8;">
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:#948C7E;margin-bottom:8px;"><span>Amount</span><span style="font-family:'Space Mono',monospace;">Balance 4,213,770.00000000</span></div>
+          <div style="display:flex;gap:10px;">
+            <input placeholder="0.00000000" style="all:unset;box-sizing:border-box;flex:1;min-width:0;padding:15px 16px;background:#1A1713;border:1px solid #241F19;border-radius:10px;font-family:'Space Mono',monospace;font-size:14px;color:#F5F0E8;">
+            <div style="width:64px;display:flex;align-items:center;justify-content:center;background:#221D17;border-radius:10px;font-family:'Space Mono',monospace;font-size:11px;color:#E8912F;cursor:pointer;">MAX</div>
+          </div>
+        </div>
+        <div style="background:#1A1713;border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:9px;font-size:12.5px;">
+          <div style="display:flex;justify-content:space-between;"><span style="color:#948C7E;">Transfer fee</span><span style="font-family:'Space Mono',monospace;">0.000001 SATS</span></div>
+          <div style="display:flex;justify-content:space-between;"><span style="color:#948C7E;">Remaining after send</span><span style="font-family:'Space Mono',monospace;">4,213,769.99999900</span></div>
+        </div>
+        <div style="height:52px;background:#E8912F;color:#17130E;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;cursor:pointer;">Send SATS</div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ================= ACTIVITY ================= -->
+  <sc-if value="{{ onActivity }}" hint-placeholder-val="{{ false }}">
+  <div style="max-width:1180px;margin:0 auto;padding:28px 28px 56px;">
+    <div style="background:#141210;border:1px solid #241F19;border-radius:12px;padding:26px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+        <h2 style="margin:0;font-size:19px;font-weight:700;letter-spacing:-0.01em;">Activity</h2>
+        <span style="font-family:'Space Mono',monospace;font-size:11px;color:#6F6659;">ICRC-3 BLOCK LOG</span>
+      </div>
+      <div style="display:grid;grid-template-columns:130px 1fr 150px 200px 190px;padding:0 14px 12px;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.12em;color:#6F6659;border-bottom:1px solid #241F19;">
+        <span>TYPE</span><span>DETAIL</span><span>FEE</span><span>BLOCK</span><span style="text-align:right;">AMOUNT</span>
+      </div>
+      <sc-for list="{{ allActivity }}" as="row" hint-placeholder-count="6">
+        <div style="display:grid;grid-template-columns:130px 1fr 150px 200px 190px;align-items:center;padding:15px 14px;border-bottom:1px solid #1C1815;">
+          <div style="display:flex;align-items:center;gap:9px;">
+            <span style="width:22px;height:22px;border-radius:50%;background:#221D17;color:#948C7E;display:flex;align-items:center;justify-content:center;font-size:11px;">{{ row.glyph }}</span>
+            <span style="font-size:13px;font-weight:500;">{{ row.kind }}</span>
+          </div>
+          <span style="font-family:'Space Mono',monospace;font-size:12px;color:#948C7E;">{{ row.detail }}</span>
+          <span style="font-family:'Space Mono',monospace;font-size:12px;color:#6F6659;">{{ row.fee }}</span>
+          <span style="font-family:'Space Mono',monospace;font-size:12px;color:#948C7E;">{{ row.block }}</span>
+          <span style="font-family:'Space Mono',monospace;font-size:13px;text-align:right;color:{{ row.color }};">{{ row.delta }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  </sc-if>
+
+  <div style="max-width:1180px;margin:0 auto;padding:0 28px 40px;font-size:11.5px;color:#6F6659;line-height:1.6;">No warranty. You use SATS entirely at your own risk — financial loss, technical failure, contract risk.</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;signedIn&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Behavior&quot;},&quot;defaultMode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;wrap&quot;,&quot;unwrap&quot;],&quot;default&quot;:&quot;wrap&quot;,&quot;tsType&quot;:&quot;'wrap' | 'unwrap'&quot;,&quot;section&quot;:&quot;Behavior&quot;}}">
+class Component extends DCLogic {
+  state = { mode: null, tab: 'swap', amount: null, pending: false, copied: false, connected: null };
+
+  get connected() { return this.state.connected ?? (this.props.signedIn ?? false); }
+  get mode() { return this.state.mode ?? (this.props.defaultMode ?? 'wrap'); }
+  get amount() { return this.state.amount ?? (this.mode === 'wrap' ? '0.00100000' : '100000.00000000'); }
+
+  fmt(n, dec) {
+    if (!isFinite(n)) return '0.00000000';
+    const [i, f] = n.toFixed(dec).split('.');
+    return Number(i).toLocaleString('en-US') + (f ? '.' + f : '');
+  }
+
+  render_numbers() {
+    const v = parseFloat(this.amount) || 0;
+    if (this.mode === 'wrap') {
+      const low = v > 0 && v < 0.00001;
+      return {
+        receive: this.fmt(v * 1e8, 8),
+        total: this.fmt(v + 0.0000002, 8) + ' ckBTC',
+        low,
+        note: low ? 'BELOW MINIMUM — 0.00001 CKBTC REQUIRED' : 'MIN 0.00001 CKBTC · APPROVE THEN DEPOSIT',
+        cta: this.state.pending ? 'Approving…' : 'Approve & wrap'
+      };
+    }
+    const out = Math.max(0, Math.floor(v - 15)) / 1e8;
+    const low = v > 0 && v < 16;
+    return {
+      receive: this.fmt(out, 8),
+      total: this.fmt(Math.floor(v), 8) + ' SATS',
+      low,
+      note: low ? 'BELOW MINIMUM — 16 SATS REQUIRED' : 'MIN 16 SATS · WHOLE SATOSHIS ONLY',
+      cta: this.state.pending ? 'Burning…' : 'Unwrap to ckBTC'
+    };
+  }
+
+  renderVals() {
+    const n = this.render_numbers();
+    const tab = this.state.tab;
+    const pill = on => ({ bg: on ? '#E8912F' : 'transparent', color: on ? '#17130E' : '#948C7E' });
+    const nav = on => ({ bg: on ? '#221D17' : 'transparent', color: on ? '#F5F0E8' : '#948C7E' });
+    const w = pill(this.mode === 'wrap'), u = pill(this.mode === 'unwrap');
+    const s = nav(tab === 'swap'), wa = nav(tab === 'wallet'), ac = nav(tab === 'activity');
+    const conn = this.connected;
+    const disabled = conn && (n.low || this.state.pending);
+    const ckbtcBal = conn ? 'Balance 0.04213770' : 'Balance —';
+    const satsBal = conn ? 'Balance 4,213,770.00' : 'Balance —';
+
+    const recentActivity = [
+      { glyph: '↓', kind: 'Wrap', meta: 'BLOCK 4,812,003 · 2m', delta: '+100,000.00000000', color: '#E8912F' },
+      { glyph: '→', kind: 'Send', meta: 'TO ryjl3…7lp · 41m', delta: '−250.00000000', color: '#F5F0E8' },
+      { glyph: '↑', kind: 'Unwrap', meta: 'BLOCK 4,809,772 · 3h', delta: '−16.00000000', color: '#F5F0E8' }
+    ];
+
+    return {
+      amount: this.amount,
+      receive: n.receive,
+      total: n.total,
+      note: conn ? n.note : 'PREVIEW ONLY — CONNECT TO WRAP OR UNWRAP',
+      noteColor: conn && n.low ? '#E8734A' : '#6F6659',
+      ctaLabel: conn ? n.cta : 'Connect Internet Identity',
+      ctaBg: disabled ? '#221D17' : '#E8912F',
+      ctaColor: disabled ? '#6F6659' : '#17130E',
+      connected: conn,
+      disconnected: !conn,
+      payBalance: this.mode === 'wrap' ? ckbtcBal : satsBal,
+      receiveBalance: this.mode === 'wrap' ? satsBal : ckbtcBal,
+      pending: this.state.pending,
+      isWrap: this.mode === 'wrap',
+      isUnwrap: this.mode === 'unwrap',
+      modeTitle: this.mode === 'wrap' ? 'Wrap' : 'Unwrap',
+      wrapPillBg: w.bg, wrapPillColor: w.color,
+      unwrapPillBg: u.bg, unwrapPillColor: u.color,
+      onSwap: tab === 'swap', onWallet: tab === 'wallet', onActivity: tab === 'activity',
+      swapTabBg: s.bg, swapTabColor: s.color,
+      walletTabBg: wa.bg, walletTabColor: wa.color,
+      activityTabBg: ac.bg, activityTabColor: ac.color,
+      copyLabel: this.state.copied ? 'Copied' : 'Copy',
+      copyBg: this.state.copied ? '#E8912F' : '#2B2318',
+      copyColor: this.state.copied ? '#17130E' : '#F5F0E8',
+      recentActivity,
+      allActivity: [
+        { glyph: '↓', kind: 'Wrap', detail: '0.00100000 ckBTC in', fee: '0.00000020 ckBTC', block: '4,812,003 / 881,204', delta: '+100,000.00000000', color: '#E8912F' },
+        { glyph: '→', kind: 'Send', detail: 'to ryjl3-tyaaa…aaaba-7lp', fee: '0.000001 SATS', block: '881,199', delta: '−250.00000000', color: '#F5F0E8' },
+        { glyph: '↑', kind: 'Unwrap', detail: '1 sat released', fee: '15 sats', block: '881,140 / 4,809,772', delta: '−16.00000000', color: '#F5F0E8' },
+        { glyph: '←', kind: 'Receive', detail: 'from 2vxsx-fae', fee: '—', block: '880,981', delta: '+12,500.00000000', color: '#E8912F' },
+        { glyph: '↓', kind: 'Wrap', detail: '0.01000000 ckBTC in', fee: '0.00000020 ckBTC', block: '4,801,150 / 879,442', delta: '+1,000,000.00000000', color: '#E8912F' },
+        { glyph: '→', kind: 'Send', detail: 'to a4gq6-oaaaa…ai-qdiqhai', fee: '0.000001 SATS', block: '879,401', delta: '−4,000.00000000', color: '#F5F0E8' }
+      ],
+      onAmount: e => this.setState({ amount: e.target.value.replace(/[^0-9.,]/g, '') }),
+      maxCkbtc: () => this.setState({ amount: '0.04213750' }),
+      maxSats: () => this.setState({ amount: '4213770.00000000' }),
+      setWrap: () => this.setState({ mode: 'wrap', amount: null }),
+      setUnwrap: () => this.setState({ mode: 'unwrap', amount: null }),
+      flip: () => this.setState({ mode: this.mode === 'wrap' ? 'unwrap' : 'wrap', amount: null }),
+      goSwap: () => this.setState({ tab: 'swap' }),
+      goWallet: () => this.setState({ tab: 'wallet' }),
+      goActivity: () => this.setState({ tab: 'activity' }),
+      copy: () => { this.setState({ copied: true }); setTimeout(() => this.setState({ copied: false }), 1600); },
+      connect: () => this.setState({ connected: true, tab: 'swap' }),
+      disconnect: () => this.setState({ connected: false, tab: 'swap', amount: null }),
+      submit: () => {
+        if (!conn) { this.setState({ connected: true, tab: 'swap' }); return; }
+        if (n.low || this.state.pending) return;
+        this.setState({ pending: true });
+        setTimeout(() => this.setState({ pending: false }), 2200);
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

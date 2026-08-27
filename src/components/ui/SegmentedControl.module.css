@@ -1,0 +1,27 @@
+.track {
+  display: flex;
+  background: var(--surface-raised);
+  border-radius: 8px;
+  padding: 3px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.option {
+  all: unset;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--muted);
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.option:hover {
+  color: var(--text-2);
+}
+
+.active,
+.active:hover {
+  background: var(--accent);
+  color: var(--accent-on);
+}
